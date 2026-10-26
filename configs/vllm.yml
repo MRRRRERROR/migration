@@ -1,0 +1,27 @@
+# The field, once set to True in the config file, cannot be set to False via command-line arguments.
+
+SERVER:
+  HOST: '127.0.0.1'
+  PORT: 1234
+  REQUEST_OUTPUT_QUEUE_TYPE: "zmq"
+  RAY_CLUSTER_PORT: 6379
+  LAUNCH_RAY_CLUSTER: False
+
+MANAGER:
+  INITIAL_INSTANCES: 1
+  DISPATCH_POLICY: 'load'
+  ENABLE_ROUTINE_MIGRATION: False
+  ENABLE_SCALING: False
+  DISPATCH_LOAD_METRIC: 'remaining_steps'
+  DISPATCH_PREFILL_LOAD_METRIC: 'kv_blocks_ratio'
+  DISPATCH_PREFILL_AS_DECODE_LOAD_METRIC: 'adaptive_decode'
+  DISPATCH_DECODE_LOAD_METRIC: 'remaining_steps'
+  DISPATCH_DECODE_AS_PREFILL_LOAD_METRIC: 'kv_blocks_ratio'
+
+INSTANCE:
+  MIGRATION_LOAD_METRIC: 'remaining_steps'
+
+  ENABLE_DEFRAG: True
+  MIGRATION_BACKEND: 'gloo'
+  MIGRATION_BUFFER_BLOCKS: 512
+  REQUEST_MIGRATION_POLICY: 'SR'

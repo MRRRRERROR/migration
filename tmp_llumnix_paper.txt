@@ -1,0 +1,1542 @@
+Llumnix: Dynamic Scheduling for Large Language Model Serving
+BiaoSun∗†,ZimingHuang∗†,HanyuZhao∗,WencongXiao,XinyiZhang†,YongLi,WeiLin
+AlibabaGroup
+Abstract Inference serving of LLMs plays a key role in LLM-
+poweredservices,becomingacriticalworkloadindatacenters.
+Inferenceservingforlargelanguagemodels(LLMs)isthekey
+Suchservicesaretypicallybackedbymultipleinstancesof
+tounleashingtheirpotentialinpeople’sdailylives.However,
+the LLM deployedon a GPU cluster. The system involves
+efficientLLMservingremainschallengingtodaybecausethe
+aschedulerandaninferenceengine,wherearequestisfirst
+requestsareinherentlyheterogeneousandunpredictablein
+dispatchedbytheschedulertoamodelservinginstance,then terms of resource and latency requirements, as a result of
+getsexecutedbytheinferenceengineinside.Therequestsare
+thediverseapplicationsandthedynamicexecutionnatureof
+typicallybatchedforexecutiononeachinstancetoincrease
+LLMs. Existing systems are fundamentally limitedin han-
+throughputandcostefficiency.
+dlingthesecharacteristicsandcauseproblemssuchassevere
+We observe unique characteristics ofLLMs thatcallfor
+queuingdelays,poortaillatencies,andSLOviolations.
+newdesignphilosophyoftheservinginfrastructure.Thefirst
+We introduce Llumnix,an LLM serving system that re-
+isworkloadheterogeneity.LLMsaredesignedtobeuniversal, acts to such heterogeneous and unpredictable requests by
+bylearningasmuchknowledgeaspossiblefromwhatever
+runtimereschedulingacrossmultiplemodelinstances.Sim-
+domains.PeoplecanquerythesameLLMintotallydifferent
+ilar to context switching across CPU cores in modern op-
+situationsorevenbuildcustomapplicationsatopLLMsfor
+erating systems,Llumnix reschedules requests to improve
+variousscenarios;forallofthese,acontext-specificinput(i.e.,
+load balancing and isolation, mitigate resource fragmenta-
+prompt)isallyouneed[15].Suchuniversalityandapplication
+tion,anddifferentiaterequestprioritiesandSLOs.Llumnix
+diversityleadtoheterogeneityoftheinferencerequests,in
+implementsthereschedulingwithanefficientandscalable
+termsofinputlengths,outputlengths,expectedlatencies,etc.
+livemigrationmechanismforrequestsandtheirin-memory
+Forinstance,thetaskofsummarizinglongtextcanintroduce
+states, and exploits it in a dynamic scheduling policy that
+significantinputlengths,wherethelatencyofreturningthe
+unifies the multiple rescheduling scenarios elegantly. Our
+firsttoken(word)isoftenimportanttouserexperience[38].
+evaluations show that Llumnix improves tail latencies by
+an order of magnitude, accelerates high-priority requests The second characteristic is execution unpredictability.
+by up to 1.5×,and delivers up to 36% cost savings while ServinganLLMrequestneedstorunthemodelformultiple
+achievingsimilartaillatencies,comparedagainststate-of-the- iterations,eachproducingasingleoutputtoken;however,it
+artLLM serving systems. Llumnix is publicly available at is not known a priori how many tokens will be generated
+https://github.com/AlibabaPAI/llumnix. eventually.Moreover,theiterativegenerationalsobringscon-
+siderableGPUmemoryconsumptionthatdynamicallygrows
+withthetokens.Assuch,theexecutiontimeandtheresource
+1 Introduction
+demandofarequestarebothunpredictable.
+These characteristics make an LLM inherently a multi-
+Largelanguagemodels(LLMs)suchastheGPTseries[15,
+tenantanddynamicenvironment,servingheterogeneousand
+49] are bringing generative AI to an unprecedented level.
+unpredictableworkloadsonmultipleinstances.Thisbehav-
+Theirhuman-levelgenerationcapabilitiesarebeingquickly
+iorisfundamentallydifferentfromtraditionalDNNmodels,
+adoptedinawiderangeofdomains,inspiringmanyimagina-
+where the requests are homogeneous and the execution is
+tionsforfutureapplications,andexpectedtohaveprofound
+one-shot,stateless,anddeterministic.Instead,wefindLLMs
+influencesonhowpeopleliveandwork.
+moresimilartomodernoperatingsystemshostingprocesses
+∗Equalcontribution. withdynamicworkingsetsanddifferentprioritiesonmultiple
+†WorkdoneduringinternshipatAlibabaGroup. cores.Managingsuchsystemshascomplexgoals,whichgoes
+1
+4202
+nuJ
+5
+]RA.sc[
+1v34230.6042:viXra
+beyondwhatexistinginferenceservingsystemsaredesigned Normal instance Terminating instance Queuing request
+for.AlthoughtherehasbeenaseriesofLLM-tailoredinfer- Running request Rescheduling destination High-priority request
+enceenginesthatshowssuperiorperformance,suchsystems
+concentrateonthesolegoalofmaximizingthroughputwithin
+asingleinstance[34,46,67].Therequestschedulingacross
+instances,ontheotherhand,hasreceivedrelativelylittleat-
+tention; the common practice today is still to use generic
+schedulingsystemsorpoliciesinheritedfromtheeraoftradi-
+tionalDNNs[4,28,35,47,53].Suchacleargapintroduces
+(a) Load balancing (b) De-frag (c) Prioritization (d) Auto-scaling
+challengesinthefollowingaspectsthatarecrucialinmulti-
+tenantenvironmentsandonlineservices. Figure1:ExamplereschedulingscenariosinLlumnix.
+Isolation.Thesystemcanhardlyprovideperformanceisola-
+tiontorequestsastheirmemoryconsumptiongrowsunpre-
+dictably.Memorycontentionincursperformanceinterference memorystatesacrossinstances.Straightforwardrescheduling
+andevenpreemptionsofcertainrequestsinabatch[34],lead- approachescouldintroducesubstantialdowntimestoresched-
+ing to highlyunstable latencies andservice-levelobjective uled requests, especially for long sequences. By contrast,
+(SLO)violations,significantlysacrificinguserexperiences. Llumnixintroducesnear-zerodowntimethatisconstantto
+Fragmentation. The varying request lengths and memory sequencelengths,bycarefullycoordinatingthecomputation
+demandsinevitablyresultinmemoryfragmentationacross andthememorytransfertohidethecost.
+instances,whichintroducesconflictingschedulingobjectives. Toexploitsuchgreatschedulingflexibilityofmigration,
+Therunningrequestspreferloadbalancingtoreducepreemp- Llumnixadoptsadistributedschedulingarchitecturethaten-
+tionsandinterference,butsuchloadbalancingfragmentsthe ablescontinuousreschedulingwithhighscalability.Llumnix
+free memory space across instances at the same time. The further introduces a dynamic scheduling policy under this
+fragmentationcancauselongqueuingdelaysofnewrequests architecturethatunifiesallthereschedulingscenarioswith
+thatinsteadrequirealargespaceononeinstanceforthein- differentgoals elegantly. This unification is achievedvia a
+putsequences.Thisconflictisdifficultfortheschedulerto conceptcalledvirtualusage:Llumnixjustneedstodefinea
+reconcilewithunpredictablearrivalsandlengthsofrequests. setofrulesforsettingthevirtualusagesofGPUmemoryfor
+Priorities.Requestsfromdifferentapplicationsandscenarios requests in differentscenarios,andthen use a simple load-
+naturallycomewithdifferentlatencyobjectives.Onlinechat- balancingpolicybasedonthevirtualusages.
+bots[6,8]areinteractiveapplicationsandarethereforewith WehaveimplementedLlumnixasaschedulinglayeron
+tightSLOconstraints.Onthecontrary,offlineapplications, topofinferenceengines.Llumnixcurrentlysupportsarepre-
+suchasevaluation[51],scoring[36],ordatawrangling[43], sentativesystem,vLLM[34],astheunderlyingengine.Eval-
+arelesssensitivetolatency.Suchdifferentlatencyobjectives uationona16-GPUclusterusingrealisticworkloadsshows
+arealsoaconsequenceofthecommercialpurposeofearn- thatLlumniximprovesP99first-tokenlatencybyupto15×
+ingmoreprofitsfromLLMsviadiversifiedserviceclasses andP99per-tokengenerationlatencybyupto2×,compared
+(e.g.,ChatGPTPlus[2]).However,existingLLMinference againstastate-of-the-artschedulerINFaaS[53].Llumnixalso
+systems[34,67]oftentreatallrequestsforamodelequally accelerateshigh-priorityrequestsby1.5×,andachieves36%
+andcannotdifferentiatetheirpriorities,whichhaslimitations costsavingwhendeliveringsimilartaillatencies.
+inmeetingdifferentlatencyobjectivesofrequests. Insummary,thispapermakesthefollowingcontributions.
+WeintroduceLlumnix,anewschedulingsystemforLLM
+serving that addresses the challenges above via runtime
+• Werevealtheuniquecharacteristicsandschedulingchal-
+reschedulingofrequestsacrossmodelinstances.Analogous
+lenges of LLM serving that necessitate new scheduling
+tocontextswitchingacrossCPUcoresinOSprocessman-
+goalssuchasisolation,de-fragmentation,andpriorities.
+agement,reschedulingenablesLlumnixtoreacttotheunpre-
+dictableworkloaddynamicsatruntime,insteadofhavingto • We propose request rescheduling as a key measure to
+address allthe complex scheduling concerns andtradeoffs achievethesegoalsandrealizeitwithanefficientmigration
+withtheone-shotdispatchingofrequests.Llumnixresched- mechanismofrequestsandtheirGPUmemorystates.
+ulesrequestsformultiplepurposes(Figure1):loadbalancing • We design a distributed scheduling architecture and an
+forreducingpreemptionsandinterference,de-fragmentation accompanyingschedulingpolicythatexploitrequestmi-
+formitigatingqueuingdelays,prioritizationofurgentrequests grationtoachievethemultiplegoalsinaunifiedmanner.
+bycreatingevenhigherdegreeofisolation,saturatingordrain-
+• WeimplementandevaluateLlumnixtoshowitsadvantages
+ingoutinstancesduringauto-scalingmorequickly.
+overstate-of-the-artinferenceservingsystems.
+Llumnixreschedulesrequestsviaanefficientandscalable
+livemigrationmechanismofrequestsalongwiththeirGPU
+2
+IterationN IterationN+1
+100 Preempted request 80
+Requestqueue Requestqueue
+Preempt 60
+Alloc 40
+Alloc
+20
+GPU GPU
+0
+Runningreqblock Freeblock Preempted/queuingreq 0 1000 2000 3000 4000
+Time (s)
+Figure2:Requestqueuingandpreemptionusingcontinuous
+batchinganddynamicmemoryallocation.
+2 Background
+ApplicationdiversityofLLMs. RecentLLMsarebecom-
+ingtask-agnostic.Thatis,thesamemodelcanworkforvari-
+oustaskswithcontext-specificinputs(a.k.a.the“prompts”)
+provided.Thisisachievedbybothincreasinglylargermodel
+anddatasetsizesandadvancedpre-trainingapproachessuch
+as few-shotlearning [14]. Task-agnostic models enable di-
+verseapplications,fromchatbots,searchengines,summariza-
+tion,coding,AIassistants,toAIagents,tonameafew.
+The diverse applications lead to requests with different
+requirementsfortheserving.Animportantaspectisthese-
+quencelengths.LLMsareracingtosupportlongersequence
+lengths—forexample,fromMarchtoNovember2023,the
+maximumsequencelengthsoftheGPTfamilyhavescaled
+from 32k 1 (GPT-4 [49]) to 128k (GPT-4 Turbo [50]). We
+expectthistrendtocontinueaslongersequencesareneces-
+saryforbroaderapplicationsofLLMs.Consideranintuitive
+exampleofthetasksforsummarizingandwritinganarticle:
+theyrequiresufficientlylonginputandoutputlengths,respec-
+tively.Anotheraspectisexpectedlatencies.Arealproduct
+exampleisthatOpenAIintroducesasubscriptionplancalled
+ChatGPTPlus[2]toofferfasterresponsesofcommonChat-
+GPTservices.Ingeneral,differentapplicationsandsituations
+alsonaturallyhavedifferentlevelsofurgency.Forexample,
+moreinteractiveapplicationslikepersonalassistantsexpect
+shorterlatenciesthantaskslikesummarizinganarticle.
+Autoregressivegeneration. Theinferenceforstate-of-the-
+artLLMsisautoregressive:themodeliterativelyacceptsthe
+inputsequenceplusallthepreviousoutputtokenstogenerate
+thenextoutputtoken,untilan“end-of-sequence”(EOS)token
+isgenerated.Thephaseforgeneratingthefirsttokenandthat
+foreachnewtokenafterwardsareusuallyreferredtoasprefill
+anddecode,respectively.LLMservicestypicallyreturnthe
+generatedtokensinastreamingmanner.Therefore,theprefill
+anddecodelatenciesarebothuser-perceivableandimportant
+touserexperiences.Theprefilllatencydetermineshowlongit
+takestostartreceivingtheresponse,whichcanbedominated
+by the queuing delay. The decode latency determines the
+speedofreceivingthefollowingtokenssubsequently.
+Duringtheautoregression,theintermediateresults(keyand
+11kstandsfor1,024whendescribingsequencelengthinthispaper.
+)%(
+egasU
+yromeM
+250 Memory 200
+Average Memory: 62.84% 150
+100
+50
+0
+P50 P80 P95 P99
+)sm(
+ycnetaL
+nekot-reP
+15 Decode Inference Preemption Loss
+10
+5
+0
+)%(
+oitaR
+detpmeerP
+Preempted
+Figure3:RequestpreemptionsinLLaMA-7Bserving.
+valuetensorsusedintheattentionoperation[59])foreach
+tokenareinvolvedinthegenerationofallfollowingtokens.
+Therefore,theinferenceenginetypicallystoresthesestates
+inGPUmemoryforreuse,knownastheKVcache[52].
+Batchingandmemorymanagement. State-of-the-artinfer-
+enceenginesapplythecontinuousbatchingtechnique[34,67]
+tohandlethevaryingsequencelengthsanddynamicarrivals
+ofrequests.Thatis,anew/completedrequestcanjoin/leave
+therunningbatchimmediately,insteadofwaitingforallthe
+runningrequeststocomplete.Batchingalsoraisesconcern
+aboutmemorymanagementofKVcache.Sincethememory
+demandofKVcacheisnotknownapriori,itwouldclearly
+limitthe batchsize andbatching benefits ifthe memory is
+reservedtothemaximumlength.Forexample,aLLaMA-2-
+13B[58]modelsupportssequencelengthsupto4k,which
+translatesto3.2GBKVcacheforasinglerequest;whilethe
+memoryofcurrentGPUsremaintensofGBs,letalonethe
+spaceformodelweights(26GBforLLaMA-2-13B).There-
+fore,recentwork(vLLM [34]) proposeddynamic memory
+allocationforKVcachetoincreasebatchsizeandthroughput,
+enabledbyatechniquenamedPagedAttention:theKVcache
+tensorsarestoredindynamicallyallocatedblocksastheKV
+cachegrows.Figure2presentsanexampleofusingcontinu-
+ousbatchingwithdynamicmemoryallocation.Therunning
+requestsarechosenbasedonthefreememoryblocks,hence
+thereisaqueuingrequest(thegrayone)atiterationNasthe
+memoryisinsufficient.Atthenextiteration,thesystemruns
+out of memory forthe new blocks of the running requests.
+Therefore,thesystempreemptscertainrunningrequests(the
+blueone),whichthengoesbacktothequeue.
+3 Motivation
+WemotivatethedesignofLlumnixwithaseriesofkeychar-
+acteristicsofLLMservingasfollows.
+Unpredictablememorydemandsandpreemptions. With
+dynamic memory allocation, request preemptions are in-
+evitable as a result of the unpredictable memory demands,
+whichcansignificantlyincreasethelatenciesofthepreempted
+requests.Figure3showsanexperimentofLLaMA-7Bmodel
+servingusingvLLMonanA10GPUrunningatraceof2,000
+requestsgeneratedfromaPoissondistribution.Theinputand
+outputlengthsfollowapower-lawdistributionwithamean
+3
+120
+100
+80
+60
+40
+20
+0
+64 128 256 512 1k 2k 4k 8k
+Total Batched Tokens
+)sm(
+ycnetaL
+edoceD
+7B(seq=64) 30B(seq=64) 2000
+7B(seq=256) 30B(seq=256) 1750
+7B(seq=1024) 30B(seq=1024) 1500
+1250
+1000
+750
+500
+250
+0 400 450 500 550 600 650 700
+Time (s)
+Figure4: LatenciesofonedecodestepofLLaMA-7Band
+LLaMA-30Bwithdifferentsequencelengthsandbatchsizes.
+value of256 tokens (details in §6). We controlthe request
+rate(0.42req/s)togetamoderatememoryload(62%onav-
+erage)withsomespikesduetothevaryingsequencelengths.
+Undersuchload,westillobserve8%oftherequestsbeing
+preempted. Wequantifythepreemptionlossbymeasuring
+thelatencypenaltycausedbypreemption,includingtheextra
+queuingtimeandtherecomputingforpreviousKVcache.We
+showdifferentpercentilesofper-tokendecodelatency(aver-
+agedacrossalldecodeiterationsofarequest).Wedonotuse
+theend-to-endlatencybecauseitdependsonthenumberof
+iterations.WeobservethattheP99per-tokendecodelatency
+ismuchworsethantheP50(3.8×),andthepreemptionloss
+accountsfor70%fortheP99request.Inparticular,theP99
+requestexperiencesatotalpreemptionlossof50seconds(pre-
+emptedtwice),showingsevereservicestallsanddegradation
+ofuserexperiencesduetopreemptions.
+Performanceinterferenceamongrequests. Wealsoob-
+serveperformanceinterferenceofrequestsinabatchtoeach
+other,duetoresourcecompetitiononGPUcomputeandmem-
+orybandwidthresources.Figure4showsthetimesforade-
+codestepofLLaMA-7B(1-GPU)andLLaMA-30B(4-GPU)
+usingdifferentsequencelengthsandbatchsizes(theX-axis
+shows the total number of tokens in a batch for each data
+point).Thedecodespeeddecreaseswithmorerequestsand
+higherinterference,andthegapbetweenthesamesequence
+lengthisupto2.6×.
+Memoryfragmentation. Consideringtheaforementioned
+problems, it would be better to spread requests across in-
+stances to reduce preemptions and interference. However,
+suchspreadingwillmaketheavailablememoryofthecluster
+fragmentedacrossinstancessimultaneously.Herefragmenta-
+tionreferstoexternalfragmentation,i.e.,unallocatedmemory
+onaninstance.DynamicallocationtechniqueslikePagedAt-
+tention[34]caneliminateexternalfragmentationduringthe
+decodephase,wheretheblocksareallocatedoneatatime.
+However,externalfragmentationremainsasignificantprob-
+lemfortheprefillphase,whichrequiresmanyblocksonan
+instanceinoneallocationtoaccommodatetheKVcacheof
+alltokensintheinputs.Therefore,externalfragmentationcan
+causelongqueuingdelaysofnewrequests,especiallythose
+skcolB
+fo
+muN
+Instance 0 Instance 2 Total Free
+Instance 1 Instance 3
+Figure5:Totalfreememoryvs.demandsofthehead-of-line
+queuingrequestsacrossfourLLaMA-7Binstances.
+withlonginputs.
+Figure 5 shows an experiment of four LLaMA-7B in-
+stances, where the trace also uses the input/output length
+distributionwithmeanvalue256andaPoissondistribution
+witharequestrateof1.9req/s.Weimplementaspreadingdis-
+patchingpolicythatdispatchesnewrequeststotheinstance
+withthelowestmemoryloadforloadbalancing.Wedemon-
+strate the fragmentation by showing the totalfree memory
+blocksacrossthecluster,againstthedemandofthehead-of-
+linequeuingrequestoneachinstance.Formostofthetime
+span,thetotalfreememorycanaccommodatethequeuingre-
+questsonatleastthreeinstances(sometimesallofthem).The
+request are queuing despite enough total memory because
+they exceed the free space on their own instances, which
+demonstratesthefragmentationandalsothepotentialofde-
+fragmentationtoreducequeuingdelays.
+Different emergency and priorities of requests. With
+requirementsofproductslikeChatGPTPlusandthediverse
+applicationscenariosofLLMs,weforeseemoreapplications
+withdifferentlatencysensitivities.However,existingsystems
+usuallytreatallrequestsequally,wherethelatency-sensitive
+couldeasilybeinterferedbyothernormalones,e.g.,excessive
+queuingdelaysorperformanceinterference.Thiscallsfora
+systematicapproachtodifferentiatingtherequestpriorities
+foranLLMtomeettheirrespectivelatencyobjectives.
+Opportunity:requestreschedulingacrossinstances. This
+paper explores a new dimension that is missing in current
+LLMservingsystems:themultiplemodelinstancesofade-
+ploymentandtheirinteraction.Asimpleintuitionisthatwhen
+theaforementionedproblemsoccuronacertaininstance,it
+ispossiblethatthewholeclusterstillhasenoughspacefor
+avoidingpreemptingrequests,accommodatingnewrequests,
+ormitigatinginterference.Thisisalsoanaturalconsequence
+ofthevaryingrequestlengthsandmemoryloadsacrossin-
+stances.However,existingsystemscannotexploitsuchfree
+spaceonotherinstancesbecauserequestsaretiedonthesame
+instanceoncescheduledthroughouttheautoregressiveexe-
+cution. Llumnix unifies the request scheduling component
+andthemodelinferenceenginetoexplorethepotentialsof
+fine-grainedcoordinationamonginferenceinstances.
+4
+4 LlumnixDesign Downtime
+Sourceinstance Legend
+Stage-0 Stage-1 Stage-N Decoding
+4.1 Overview Compute … … G co e m ne p r u a t t a e t d io n
+KV cache
+Mem … Copy KV cache
+LlumnixbuildsuponthekeyideaofreschedulingLLMin- Time
+ferencerequestsatruntimeacrossmodelinstances.Llumnix Migrationinitiated
+inheritscontinuousbatching[67]anddynamicmemoryallo- … …
+Compute
+cation[34]fromstate-of-the-artsystemsforhighthroughput.
+Beyondthat,Llumnixexploitsrequestreschedulingtoreact Mem …
+totheunpredictableworkloaddynamicsinvarioussituations Time
+Destination instance Migrationcompleted
+withdifferentschedulinggoals,asillustratedinFigure1.
+A first goal is load balancing (Figure 1-a) to reduce re- Figure6:Llumnixadoptsmulti-stagemigrationtooverlapthe
+questpreemptions andinterference on high-loadinstances. computationandKVcachecopyingforminimaldowntime.
+Althoughthedispatchingcanalsoconsiderloadbalancingof
+memoryusage,itcouldbesub-optimalasthefinalmemory
+usagesofrequestsareunknownatthearrivals,duetotheun- 4.2 LiveMigrationofLLMRequests
+predictabilityofoutputlengths.Reschedulingcomplementsit
+byreactingtotherealusagegrowthsofrequests.Meanwhile, ThesignificantKVcachestatesofrequestscanpotentially
+asshownbefore,loadbalancingcanalsoleadtohighermem- introducegreatcostandservingstallsduringrescheduling.
+oryfragmentationandlongerqueuingdelaysoflonginputs Llumnixaddressesthischallengebyexploitingakeychar-
+probably.Therefore,Llumnixalsoreschedulesrequestsfor acteristicofLLM inference: the KV cache is append-only.
+de-fragmentation(1-b),i.e.,creatingcontiguousspaceonan LLMinferenceiterativelyconcatenatestheoutputtokenof
+instancebymovingrequestsontoothers.Althoughthesetwo the current iteration with the input tokens,which is set as
+goals remain a tradeoff,Llumnix has a much larger space theinputforthenextiteration.Inthisway,inferenceengines
+tobalancethemwithrescheduling.Anothergoalisprioriti- alsokeepappendingthecalculatedKVstateofthecurrent
+zation (1-c) ofcertain requests by rescheduling co-located iterationtotheKVcacheparameters,leavingtheparameters
+requestsawayforlowerloadandavoidinginterference.Such generatedbypreviousiterationsremainconstant.
+reschedulingprovides“decicated”resourcestohigh-priority ThelivemigrationmechanismofLlumnixutilizesthein-
+requestsdynamically,withouttheneedforreservingmachines herentappend-onlycharacteristicofKVcachetopipelinethe
+statically.Finally,Llumnixalsoreschedulesrequestsduring KVcachecopyingwiththedecodingcomputation.Because
+auto-scaling,e.g.,todrainoutaninstancetobeterminated the KV cache already generated won’t be modified in the
+(1-d)orsaturateanewinstancemorequickly. followingiterations,LlumnixcansafelycopytheKVcache
+Realizingsuchhighlydynamicreschedulingefficientlyis ofprevioustokensinparallelwiththecomputationfornew
+challenging,consideringthelargerequestcontextstates(i.e., tokens.Inthisway,Llumnixachievesnear-zeroandconstant
+theKVcache).Naïvesolutionsincluderecomputingorcopy- downtimetotherescheduledrequest.AsshowninFigure6,
+ingtheKVcacheoftherescheduledrequests,howeverwith whenmigrationisinitiated,thesourceinstancestartstocopy
+highcomputationstallsanddowntime,reachingover50×of theKVcacheblocksofcompletediterations,andcontinues
+thedecodingcost(§6.2).What’smore,theKVcachestates thecomputationatthesametime(stage0).Whenthecopying
+increasewithsequencelengths,limitingtheschedulingflexi- forthepreviousKVcacheblocksisdone,therewillbeafew
+bilityunderthetrendofgrowingcontextlengths[50].Such moreiterations(i.e.,blocksinFigure6)computedinstage0.
+ahighinferencedelayingeneratingnexttokensgreatlyde- Then,itswitchestostage1tocopytheKVcachegenerated
+gradestheuserexperiencesofLLMservingandthusprohibits bystage0,whilecontinuingthecomputationafterwards.The
+requestrescheduling.Llumnixaddressesthischallengewith copyingisgenerallymuchfasterthanthecomputation,thus
+a live migration mechanism thatpipelines andcoordinates thenumberofnewblocksistypicallysmallsuchthatwecan
+theKVcachecopyingandthetokengenerationcomputation, copytheminaveryshortperiod.Totheend,onlyoneitera-
+therebybringingnegligibledowntime(§4.2). tionofcomputationisconductedfortheKVcachemigration
+Toexploitthebenefitsofmigration,Llumnixadoptsascal- (i.e.,stage-N).Therefore,Llumnixsuspendsthecomputation
+ablearchitecturethatcombinesglobalandlocalschedulingto for the request by draining it out of the current batch and
+decentralizetheschedulingdecisionsandthecoordinatedmi- copiestheremainingblock,whichintroducesthedowntime
+grationactions,facilitatingcontinuousreschedulingatscale ofthisrequest.Onceitisfinished,themigrationcompletes
+(§4.3).Underthisarchitecture,wefurtherdesignanefficient andtherequestresumesonthedestinationinstance.Although
+heuristic scheduling policy that centers around the virtual thetotalcopyingdurationofthewholesequencedependson
+usage conceptto abstractthe requirements ofthe different thesequencelength,thedowntimefortherequestisonlythe
+schedulinggoalsinaunifiedmanner(§4.4). periodofcopyingtheKVcachegeneratedbyoneiteration,
+5
+Source instance
+Global Scheduler Migration control
+Stage 0 Stage-1 … Stage-N Re B le lo a c s k ed Other control
+PRE-ALLO
+C
+ACK/
+AB
+ORT ABO
+RT
+PRE-ALLO
+C/
+ACK/
+AB
+ORT CO M
+M IT Dis
+N
+p
+e
+a
+w
+tc h
+requests
+R
+I
+e
+n
+p
+st
+o
+a
+r
+n
+t
+c
+lo
+e
+a
+lo
+d
+ads
+Trigger migratio
+S
+n
+cale
+Block Block Compute
+Alloc Alloc Resumed Instance
+Destination instance
+Local Scheduler Migration
+llumlet
+Figure7:Handshakeduringmigration. Coordinator
+llumlet
+Executor
+whichisnegligibleregardlessofthesequencelength. Executor
+TherequestmigrationapproachofLlumnixborrowsthe
+Instance
+keyconceptintroducedinvirtualmachine(VM)livemigra- GPU
+tion[17],whichgraduallyreducestheworkingsettomini- Model Instance Instance
+mizethedowntime.Llumnixdoesnotrequirethedirtypage
+tracinginVMmigrationastheworkingset(i.e.,KVcache)is Figure8:Llumnixarchitecture.
+append-onlyanddoesnotchangeduringmigration.However,
+LLMservingfurtherintroducesadditionalchallenges.Firstly,
+asboththesourceanddestinationinstancesarecontinually
+schedulers,namedllumlets,toenablecontinuousrescheduling
+processing requests,the request might run out of memory efficiently(Figure8).Llumnixdefinesacleanseparationof
+duringmigration.Secondly,therequestcancompleteinthe concernswithanarrowinterfacebetweenthetwolevels.The
+middleofmigration,duetotheunpredictableexecution(i.e., globalschedulerdoesnotdirectlytrackorscheduletherun-
+generatingEOStoken)andthecontinuousbatching[67].To ningrequests;instead,itmakesallschedulingdecisionsori-
+handlesuchexceptionsandguaranteecorrectnessduringthe
+entedtotheinstances,accordingtothememoryloadsofthem.
+asynchronouscomputationandmemorycopying,Llumnixin- This way, the complexity of the global scheduler remains
+troducesfine-grainedcoordinationbetweentheparticipating independentfromtherunningrequests,therebypreserving
+instanceswithahandshakeprocess(Figure7).Beforeeach similarscalabilitytoschedulerswithoutdynamicscheduling.
+stage,thesourceinstanceissuesapre-allocaterequestwith Theloadsarereportedbythellumletsperiodically,basedon
+thenumberofblockstomigratetomakesurethatthedestina- therequeststatusandLlumnix’sschedulingpolicy.
+tionhasenoughspace.Thedestinationwilltrytoallocateand Theglobalschedulerutilizestheloadinformationtodis-
+reservetheblocks;ifitsucceedsorfails,thedestinationwill patchnewrequests,triggermigrationacrossinstances,and
+notifythesourcetoproceedorabortthemigrationandclean controltheinstanceauto-scaling.Inparticular,formigration,
+thestates,respectively.Similarly,aftereachstage,thesource thedecisionsarenotmadeforspecificrequests;theglobal
+instancealsocheckswhethertherequestbeingmigratedhas schedulerjustpairsthesourceanddestinationinstances,only
+completedorbeenpreempted—ifithas,thesourcewillno- basedontheloads,andmarksthemasinthecorresponding
+tifythedestinationtoabortandreleasethereservedblocks; statestotriggerthemigration.Thellumletswilldecidethe
+otherwise the source will go ahead to the next stage. The requeststomigrateandexecutethemigrationautomatically.
+sourceordestinationwillalsoabortthemigrationiftheother Thellumletofeachinstanceconsistsofalocalscheduler
+sidefails.Afterthefinalstagefinishes,thesourcereleases andamigrationcoordinator.Inadditiontothefunctionalities
+its local blocks and notifies the destination to commit the of similarroles in existing systems like queuing,batching,
+migrationandresumetheexecutionoftherequest. andblockmanagement,animportantnewtaskofthelocal
+scheduleristocalculatethememoryloadoftheinstance.The
+loadisnotsimplythephysicalmemorybeingused;instead,
+4.3 DistributedSchedulingArchitecture
+itisasumofthe“virtualusages”(§4.4)oftherequests.The
+localschedulerisalsoresponsiblefordecidingtherequests
+Thelivemigration mechanism providesthefoundation for
+to migrate when triggered. Given the chosen requests,the
+runtimereschedulingofLLMinferencerequests.However,
+migrationcoordinatorwillcoordinatewiththelocalscheduler
+achievingfullydynamicschedulingisstillnon-trivialdueto
+andtheotherinstance,andinstructthemodelexecutortodo
+thehigherschedulingpressurethanintraditionalschedulers.
+thememorycopying,asdescribedbefore.
+Inparticular,Llumnixwouldneedtocontinuouslytrackand
+rescheduleeverysinglerunningrequestthroughoutthecluster,
+ratherthanonlydispatchincomingrequestsforonetimeor 4.4 DynamicSchedulingPolicy
+onlymanagerunningrequestsononeinstance.Thisimpliesa
+4.4.1 GoalsandDefinitions
+higherschedulingfrequencyandalargernumberofrequests
+fortheschedulertotrackandscheduleineachround. Llumnix’sschedulingpolicyisdesignedwiththefollowing
+Llumnix devises a scalable architecture thatcombines a goals.Thefirstistoimproveprefillanddecodelatencies,
+cluster-levelglobalscheduleranddistributedinstance-level byreducingqueuingdelays,preemptions,andinterference.
+6
+Thesecondgoalisload-adaptivitytohandlevaryingcluster Physical usage Virtual usage
+loadandimprovecostefficiency.Wenoticethatthebenefits
+ofreschedulingisalsorelevanttoclusterload,whichcould
+be limited under too high/low load. Llumnix incorporates
+instanceauto-scalingtokeepappropriateclusterloadforboth
+savingcostsandmaximizingthebenefitsofrescheduling.
+Besides these two goals similarto those of existing sys-
+tems,Llumnix introduces a new goal of request priorities
+thatcomesfromthenewrequirementsofLLMs. Priorities
+(a) Load balancing (b) De-frag (c) Prioritization (d) Auto-scaling
+present a systematic approach for the same LLM to serve
+certainrequestswithhigheremergency,e.g.,fromChatGPT Figure 9: Llumnix combines virtual usages with a load-
+Plusormoreinteractiveapplications.Llumnixprovidesap- balancingpolicytounifymultipleschedulinggoals.
+plicationswithaninterfaceforspecifyingrequestpriorities
+tomeetdifferentSLOs,intermsofschedulingpriorityand will trigger migration for load balancing (which in effect
+execution priority. Requests with higherscheduling priori- is de-fragmentation for the queuing request), as shown in
+tieswillgetscheduledearliertoreducetheirqueuingdelays. Figure9(b).Therecouldbealotofheuristicstoexplorefor
+Those with higher execution priorities will be given lower settingthevirtualusage,whichcontrolsthetradeoffbetween
+instanceloadandhencelessinterferencetoacceleratetheir reducingqueuingdelaysandloadbalancing—forexample,
+execution.Currently,Llumnixsupportstwopriorityclasses, graduallyincreasingthevirtualusageofaqueuingrequest
+high and normal,to demonstrate the ability of Llumnix to untilitreachestherealmemorydemand.Llumnixcurrently
+preferhigh-priorityrequests,butourdesignalsogeneralizes uses a simple rule that directly uses its real demand (line
+tomorepriorities. 4 in Algorithm 1),whichfavours reducing queuing delays.
+Thisruleisbasedonourobservationthatqueuingdelaycan
+dominatetheend-to-endlatencyandworthsuchpreference.
+4.4.2 VirtualUsage
+Ourevaluationalsoshowsthatthisrulepreservesthebenefits
+To achieve the multiple goals above under the distributed ofloadbalancing,duetothehighflexibilityofmigration.
+schedulingarchitecture,Llumnixneedsaschedulingpolicy Execution priorities. For a request with high execution
+thatcanexpressthesegoalsusingsimpleinstance-levelmet- priorities,Llumnixtriestopreventtheinstancetherequest
+rics,to improve the efficiencyandscalabilityofthe global isrunningonfromexceedingagivenlevelofrealload,by
+scheduler.Tothisend,Llumnixintroducesthevirtualusage reserving a memory space as headroom, as shown in Fig-
+abstraction to unify these different, sometimes conflicting ure9(c).Thisisachievedbyaddingsuchaheadroomonthe
+goalsintoasimpleloadmetricofinstances.Thekeyobserva- physical usage of a high-priority request to get the virtual
+tionhereisthattheaforementionedreschedulingscenarios usage(line8).Whentherearemultiplehigh-priorityrequests
+fall into two categories: load balancing,and creating free onaninstance,thisheadroomisdividedamongthem(line
+spaceononeinstance(de-fragmentation,prioritization,and 10).Theheadroomforhigh-priorityrequestsiscurrentlyde-
+drainingoutinstances).Wefindthattheycanbeunifiedinto finedasthatrequiredtopreservetheidealdecodespeed(i.e.,
+loadbalancingbyassumingavirtualloadontheinstance:to novisibleinterference),whichisobtainedthroughprofiling.
+createfreespaceonaninstance,wejustneedtosetthevir- The headroom for normal requests is 0. Llumnix can also
+tualusagesofcertainrequeststomaketheinstancevirtually supportmoreexecutionprioritiesbyspecifyingthesizesfor
+overloaded,thenaloadbalancingpolicywillbetriggeredto theheadroom.Whentheheadroomforahigh-priorityrequest
+migratetherequeststootherinstances. is running up, the other normal requests will be migrated
+Thisobservationleadsustoasimpleheuristicwithload- away by the load balancing policy because the instance is
+balancingasthebasis,combinedwithasetofrulesforsetting overloadedintermsofthetotalvirtualusage.
+requestvirtualusagesindifferentsituations.Wesummarize Auto-scaling. Whenanewinstanceislaunched,Llumnix’s
+therulesinthefunctionCalcVirtualUsageinAlgorithm1 loadbalancingpolicywillautomaticallysaturateitbymigrat-
+andillustrateexamplescenariosinFigure9.Innormalcases, ingrequestsfromotherinstancestoit.Whenaninstanceis
+thevirtualusageofarequestisjustitsphysicalmemoryusage terminating,weartificiallyaddafakerequestwithavirtual
+toenableroutineloadbalancing,asshowninFigure9(a).We usageofinfinityonit(line7),thentheremainingrequests
+discusstherulesforothercasesasfollows. willbemigratedtootherinstances,asshowninFigure9(d).
+Queuing requests. Forthe head-of-line queuing request
+on an instance, we assign a positive virtual usage to it to
+4.4.3 Policies
+reflectitsresourcedemandintermsoftherequiredmemory,
+althoughthephysicalusageis0.Thus,queuingrequestswill Wethendescribehowthespecificschedulingdecisionsare
+increasethetotalvirtualusageoftheinstance,thenthepolicy madebasedonthevirtualusages.
+7
+Algorithm1:VirtualUsageandFreenessCalculation Auto-scaling. Llumnixscalestheinstancesaccordingtothe
+clusterloadintermsoftheaveragesfreenessforthenormal
+1 FunctionCalcVirtualUsage(req,instance):
+2 ifreq.isQueuingthen priorityacrossinstances.Thepolicymaintainstheaverage
+3 ifreq.isHeadOfLinethen freeness within a range [x,y],andadds orterminates an in-
+4 returnreq.demand
+stancewhenthefreenessissmallerthanxorgreaterthany
+5 return0
+foraperiod,respectively.Llumnixchoosestheinstancewith
+6 ifreq.isFakethen
+7 return∞ fewestrunningrequestsfortermination.
+8 returnreq.physicalUsage+GetHeadroom(req.priority,instance)
+9 FunctionGetHeadroom(p,instance):
+10 returnheadroomForPriority[p]/instance.numRequests[p] 5 Implementation
+11 FunctionCalcFreeness(instance):
+12 ifinstance.isTerminatingthen
+13 AddFakeReq(instance.requests) We implement Llumnix with 3,300 lines of Python code.
+14 totalVirtualUsages=0 Llumnixisastandalonelibrarycomprisingbothitsowncom-
+15 forreqininstance.requestsdo ponentsandaninterfacetointegrateandcommunicatewith
+16 totalVirtualUsages+=CalcVirtualUsage(req,instance)
+backendinferenceengines.ThisarchitecturemakesLlumnix
+17 freeness=(instance.M−totalVirtualUsage)/instance.B
+18 returnfreeness non-intrusiveandextensibletodifferentbackends.Llumnix
+currentlysupports vLLM [11] as the backend, whichis an
+open-source state-of-the-art inference engine that features
+continuousbatching,PagedAttention,andtensor-paralleldis-
+Dispatching. Llumnixdispatchesnewrequestswithhigher tributedinference[34,56].
+schedulingprioritiesfirst.Withinthesamepriority,itadopts Multi-instanceserving. Llumnixinstantiatesthemultiple
+a simple first-come-first-serve order. On each instance,re- instancesofthebackendandtheothercomponentsasRay[42]
+questsarescheduledinthesameorder.Llumnixusesaload- actors.Ray’sPython-nativedistributedruntimeenablesfine-
+balancing policy that dispatches each request to the freest grained coordination among these actors in a simple and
+instance.Weintroduceametricformeasuringthefreeness efficientmanner.Llumnixalsolaunchesasetofrequestfron-
+ofaninstancedefinedasF =(M−∑V)/B,whereMisthe tendactorsthatexposesanOpenAI-styleAPIendpoint[48].
+totalmemory,V isthevirtualusageofeachrequest,andB Althougharequestcanbemigratedacrossbackendinstances,
+isthebatchsize.While(M−∑V)alreadymeasuresthefree thegeneratedtokensareforwardedtothefrontendandthen
+space,we divide itbythe batchsize because itdetermines returnedtoendusers,ensuringasteadyAPIservice.
+the consumption speed,i.e.,the numberofnew tokens per KVcachetransfer. WeusetheGloocollectivecommunica-
+iteration.Thusthemetricsuggestshowmanyiterationsthe tionlibrary[5](theSend/Recvprimitives)fortheKVcache
+batchcanstillrunfor.ThenLlumnixdispatcheseachincom- transferduringmigration.ApotentialalternativeisNCCL[1],
+ingrequesttotheinstancewiththehighestfreeness.Because whichis generally fasterthan Gloo on GPUs buthas been
+the virtual usage of a request can be largerthan the physi- adoptedincommunicationfordistributedinference.However,
+cal,itispossiblethatF isanegativevalue,e.g.,whenthere Llumnixneedstomigraterequestsinparallelwiththeinfer-
+are queuing requests or high-priority requests. Such nega- encetominimizethedowntimes,butconcurrentinvocations
+tive freeness values help Llumnix automatically treat such ofNCCLareknowntobeunsafe[45].Thepipelinedmigra-
+instances as overloaded and prefer dispatching requests to tiondesignallowsustouseGloowhilemaintainingnegligible
+otherinstances.Thefreenessmetricalsoguidesthemigration downtimes.UsingGlooneedstocopytheKVcachebetween
+andauto-scaling,asshownlater. CPU and GPU memory, which is done in another CUDA
+Migration. Llumnixtriggersthemigrationpolicyperiod- stream to avoid blocking the inference computation. Note
+ically.Ineachround,Llumnixselectsthecandidatesetsof thatin typicaldeployments,the communication-heavyten-
+sourceanddestinationinstancesbychoosingthosewithfree- sorparallelismislimitedinasinglemachineforhigh-speed
+nessvaluessmallerorgreaterthangiventhresholds,respec- transfer[44].Insuchcases,migrationbetweeninstances(ma-
+tively.Llumnixpairstheinstancesfrombothsetsbypicking chines)willnotinterferewiththetensor-parallelinference.
+thetwowiththelowestandthehighestfreenessvaluesrepeat- Blockfusion. vLLMstorestheKVcacheinnon-contiguous
+edly,andthensetsthemincorrespondingstates.Thellumlet smallblocksthataredynamicallyallocated.Forexample,the
+ofeachsourceinstancethenstartstomigraterequeststothe blocksizeofa16-bitLLaMA-7Bmodelis128KB(forkeyor
+destinationcontinuously,untilitisnolongersetinthesource valuetensorsof16tokensineachlayer),andasequenceof1k
+state.Thellumletpreferstherequestswithlowerpriorities tokenstranslatesto4ksuchblocks(32layers).Toavoidthe
+andshortersequencelengthswhenchoosingtherequeststo overheadofsendingtheseblocksusingmanysmallmessages,
+migrate. In the nextround,ifan instance during migration wefusetheblocksbycopyingthemfromGPUmemoryto
+isnolongerbeyondthethresholds,Llumnixwillunsetthe acontiguousCPUmemorybufferanduseGlootosendthe
+migrationstateandthemigrationwillstop. bufferasawhole,therebyimprovingthetransferefficiency.
+8
+Faulttolerance. Llumnixprovidesfaulttoleranceforeach Distribution Mean P50 P80 P95 P99
+component to ensure high service availability. When the
+In 306 74 348 1484 3388
+global schedulerfails,Llumnix temporarily falls back to a ShareGPT Out 500 487 781 988 1234
+Real
+scheduler-bypassingmode,thusnotaffectingtheserviceavail-
+In 830 582 1427 2345 3549
+ability:thatis,therequestfrontendsdirectlydispatchrequests BurstGPT Out 271 243 434 669 964
+tocertaininstancesusingsimplerules,andmigrationisdis-
+Short(S) 128 38 113 413 1464
+abled.Whenaninstance(ortheco-locatedllumlet)fails,the Gen Medium(M) 256 32 173 1288 4208
+requestsrunningonitwillbeaborted.Inparticular,ongoing Long(L) 512 55 582 3113 5166
+migrationonfailedinstanceswillalsobeaborted(therequest
+beingmigratedisnotnecessarilyaborted,dependingonifits Table1:Realandgenerateddistributionsofsequencelengths
+sourceinstanceishealthy),whichishandledbythehandshake (numbersoftokens)usedinourevaluation.Therealdistribu-
+process.Thesefailedactorswillbeautomaticallyrestartedby tionsincludethoseofbothinputs(“In”)andoutputs(“Out”).
+Ray,afterwhichtheservicecouldgobacktonormalstate.
+WeusePoissonandGammadistributionswithdifferentre-
+6 Evaluation
+questrates(requestspersecond)togeneraterequestarrivals.
+For Gamma, we also use varying coefficients of variance
+WeevaluateLlumnixona16-GPUclusterusingrealisticmod-
+(CVs)toadjusttheburstinessoftherequests.Eachtracehas
+elsandvariousworkloads.Overall,ourkeyfindingsinclude:
+10,000requests.Wechooseanappropriaterangeofrequest
+ratesorCVsforthetracestomaintaintheloadswithinarea-
+• Llumnixintroducesnear-zerodowntimetorequestsbeing
+sonablerange:nearlynoqueuingdelaysandpreemptionsfor
+migratedandnear-zerooverheadtootherrunningrequests.
+P50requests,andqueuingdelayswithinafewtensofseconds
+• Llumnix improves prefill latencies by up to 15×/7.7× forP99requestswhenusingLlumnix.
+(P99/mean)overINFaaSon16LLaMA-7Binstancesvia Fortheinput/outputlengthsofrequests,weusetwopublic
+de-fragmentation.LlumnixalsoimprovesP99decodela- ChatGPT-4conversationdatasets,ShareGPT(GPT4)[10]and
+tencybyupto2×byreducingpreemptions. BurstGPT (GPT4-Conversation) [62],foran evaluation on
+• Llumniximproveshigh-priorityrequestlatenciesbyupto realworkloads.ConsideringthatLlumnixtargetsmorediver-
+1.5× by reducing their queuing delays and accelerating sifiedapplications,wealsousegeneratedpower-lawlength
+theirexecution,whilepreservingsimilarperformanceof distributionstoemulatelong-tailworkloadsthatmixbothfre-
+thenormalrequests. quent,shortsequences(e.g.,forinteractiveapplicationslike
+chatbotsandpersonalassistants)andseldom,longsequences
+• Llumnixachievesupto36%costsavingwhilepreserving
+(e.g.,summarizingorwritingarticles).Wegeneratemultiple
+similarP99latencieswithefficientauto-scaling.
+distributionswithdifferentlong-taildegreesandmeanlengths
+(128,256,512),asshownbytheShort(S),Medium(M),and
+6.1 ExperimentalSetup Long(L)distributionsinTable1. Thesedistributionshave
+amaximumlengthof6k,thusthetotalsequencelengthofa
+Testbed. Weusea16-GPUclusterwith4GPUVMsonAl-
+request(inputplusoutput)willnotexceedthecapacityofan
+ibabaCloud(typeecs.gn7i-c32g1.32xlarge),eachwith
+A10GPUwhenrunningLLaMA-7B(13,616tokens).Toob-
+4NVIDIAA10(24GB)GPUsconnectedviaPCI-e4.0,128
+servetheperformancewithdifferentworkloadcharacteristics,
+vCPUs,752GBmemory,and64Gb/snetworkbandwidth.
+weconstructthetracesbypickingdifferentcombinationsof
+Models. Weconductexperimentsusingapopularmodel
+thelengthdistributionsforinputsandoutputsasfollows:S-S,
+family, LLaMA [57]. We test two different specifications:
+M-M,L-L,S-L,andL-S.
+LLaMA-7B,whichrunsonasingleGPU,andLLaMA-30B,
+Baselines. WecompareLlumnixwiththefollowingsched-
+whichrunson4GPUsofamachineusingtensorparallelism.
+ulers.AllthebaselinesandLlumnixusevLLMastheunder-
+Themodelsadoptthecommonlyused16-bitprecision.The
+lyinginferenceenginetofocusthecomparisonontherequest
+version of vLLM that we based on only supports the orig-
+schedulingacrossinstances.
+inal LLaMA with a maximum sequence length of 2k, but
+therehavebeenaseriesofrecentLLaMAvariantssupporting
+• Round-robindispatching:asimpledispatchingpolicyto
+longersequencelengthsrangingfrom4kto256k[3,7,58,65].
+distributerequestsacrossinstancesevenly,whichisatypi-
+Sincethemodelarchitecturesandinferenceperformanceof
+calbehaviorofproduction-gradeservingsystems[4,9,47].
+thesevariantsaremostlysimilartothoseofLLaMA,webe-
+lievethatourresultsarerepresentativeofmoremodeltypes • INFaaS++:anoptimizedversionofINFaaS[53],astate-
+andlargersequencelengthrangesfromasystemsperspective. of-the-artschedulerformulti-instanceserving.Weevaluate
+Traces. Similartopriorwork [34,35,67],we synthesize itsload-balancingdispatchingandload-awareauto-scaling
+requesttracestoassesLlumnix’sonlineservingperformance. policies. We improve it by making it focus on the GPU
+9
+3500
+3000
+2500
+2000
+1500
+1000
+500
+0
+256 512 1k 2k 4k 8k
+Sequence Length
+)sm(
+emitnwoD
+Migration(7B)
+60
+Migration(30B)
+Blocking copy(7B) 50
+Blocking copy(30B)
+Recompute(7B) 40 Recompute(30B)
+30
+20
+10
+0
+256 512 1k 2k 4k 8k
+Sequence Length
+)sm(
+ycnetaL
+edoceD
+LLaMA-7BandLLaMA-30B,showingthenegligiblemigra-
+tionoverhead.Alsonotethatsuchoverheadexistsonlywhen
+therearerequestsbeingmigrated(inorout)onaninstance.
+Wefindthatinalltheservingexperimentsinthefollowing
+sections,theaveragefractionoftimespanwithongoingmi-
+Migration(7B) Migration(30B) grationforeachinstanceisonlyroughly10%.Thisimplies
+Normal(7B)
+Normal(30B) an effective overhead that is even much smaller, which is
+worthwhileforthegreatschedulingbenefitsofmigration.
+Figure10:Downtimeandoverheadofmigration.
+6.3 ServingPerformance
+memoryloadasitisthedominantresourceinLLMserving. WeevaluatetheschedulingperformanceofLlumnixinon-
+Thisloadalsocountsinthememoryrequiredbyqueuing lineservingusing16LLaMA-7Binstances(auto-scalingis
+requestsoneachinstancetoreflectthequeuepressure. disabledexceptinexperimentsin§6.5).
+Realdatasets. WefirstcompareLlumnixwithround-robin
+• Llumnix-base:abaseversionofLlumnixthatispriority-
+andINFaaS++usingtheShareGPTandBurstGPTtraces(the
+agnostic(i.e.,treatsallrequestsasthesamepriority)but
+toptworowsinFigure11).Llumnixoutperformsthebase-
+enablesalltheotherfeaturesincludingmigration.
+lines in end-to-end request latency by up to 2× and 2.9×
+Keymetrics. Wefocusonrequestlatency,intermsofend- for mean and P99, respectively. In particular, we observe
+to-end,prefill(thatofthefirstgeneratedtoken),anddecode thatround-robinalwaysperformsmuchworsethanbothIN-
+(thatsincefirstgeneratedtokentothelast,averagedoverall FaaS++andLlumnix:sincethesequencelengthshavehigh
+generatedtokens).WereportbothmeanandP99values. variance,simply distributing requests evenly can still lead
+tounbalancedload,impactingbothprefillanddecodelaten-
+cies.Llumnixachievessignificantgainsinprefilllatencyover
+6.2 MigrationEfficiency
+round-robin,byupto26.6×formeanand34.4×forP99.This
+We first examine the performance of Llumnix’s migration isbecauseround-robincanpossiblydispatchnewrequeststo
+mechanism,intermsofthedowntimesintroducedtothemi- overloadedinstances,leadingtolongqueuingdelays.Llum-
+gratedrequestsandtheperformanceoverheadsfortherunning nixalsoimprovesP99decodelatencybyupto2×,byload
+requests.Wetestboththe1-GPULLaMA-7Bandthe4-GPU balancingtoreducepreemptions.Thismarginseemssmaller
+LLaMA-30B models. For each model, we deploy two in- as the latency penalty caused by preemptions is averaged
+stancesontwodifferentmachines.Weusedifferentsequence over all generated tokens. However,whenever preemption
+lengths,foreachofwhichwerunabatchofrequestswiththe occurs,itresultsinasuddenservicestall,whichimpactsuser
+same totallengthof8kon bothinstances. We migrate one experience.Figure11(therightmostcolumn)reportsthepre-
+oftherequestsfromoneinstancetoanotherandmeasureits emptionlossintermsoftheextraqueuingandrecomputing
+downtimeandthedecodespeedsoftherunningbatcheson times(meanvalueofallrequests).Llumnixreducespreemp-
+bothinstancesduringmigration. tionlossby84%onaveragecomparedtoround-robin.These
+Wecomparethedowntimeduringmigrationwithtwosim- results highlightthe importance ofloadbalancing in LLM
+ple approaches: recomputing,andblocking copying of the serving.Inthefollowingexperimentsusinggenerateddistri-
+KVcacheusingGloo(non-blockingforotherrequests).As butionswithhighervariance,round-robinshoweduptotwo
+showninFigure10(left),thedowntimeofmigrationisnearly ordersofmagnitudeworselatencies.Therefore,weomitit
+constantwithincreasingsequencelengths(roughly20-30ms), fortheothertracesforclarityofthefiguresandfocusonthe
+even shorterthan a single decode step. In comparison,the comparisonbetweenINFaaS++andLlumnix.
+downtimesofbaselinesincreasewiththesequencelengths, LlumnixoutperformsINFaaS++inmeanandP99prefill
+reachingupto111×thatofmigration.Forexample,recom- latenciesbyupto2.2×and5.5×,andP99decodelatencies
+puting an 8k sequence for LLaMA-30B takes 3.5s,which by up to 1.3×, respectively, showing the extra benefits of
+translates to a service stall similar to 54 decode steps. We migration,beyonddispatch-timeloadbalancing.Nextweuse
+alsonoticethatforallsequencelengths,themigrationonly moretraceswithdifferentcharacteristicstofurtherevaluate
+takestwostages,whichistheminimum.Thisisbecausethe themforadeeperunderstandingoftheimprovements.
+datacopyingissufficientlyfastandthenumberofnewtokens Generateddistributions. We compare Llumnix andIN-
+generatedduringthefirststageissmall. FaaS++usingmultiplegenerateddistributions(bottomfive
+Figure10(right)alsocomparestheper-stepdecodetimes rowsinFigure11).LlumnixoutperformsINFaaS++acrossall
+duringmigrationonthesourceinstancewiththatduringnor- tracesinend-to-endrequestlatencybyupto1.5×and1.6×
+mal execution (results on the destination are mostly simi- formeanandP99,respectively.Forprefill,theimprovements
+lar).Weobserveupto1%performancedifferencesforboth areupto7.7×formeanand14.8×forP99.Despitedispatch-
+10
+150
+100 50
+0
+7.0 7.5 8.0
+TPGerahS )s(
+ycnetaL
+Request P99 Request Mean Prefill P99 Prefill Mean Decode P99 Decode Mean Preemption Loss
+40 100 0.06
+10
+20 50 5 0.1 0 0 . . 0 0 2 4 1
+0 0 0 0.0 0.00 0
+7.0 7.5 8.0 7.0 7.5 8.0 7.0 7.5 8.0 7.0 7.5 8.0 7.0 7.5 8.0 7.0 7.5 8.0
+200
+100
+0
+7.5 8.0 8.5
+TPGtsruB )s(
+ycnetaL
+40 0.06 0.4
+20 0.10
+0.04 20 100 10 0.05 0.02 0.2
+0 0 0 0.00 0.00 0.0
+7.5 8.0 8.5 7.5 8.0 8.5 7.5 8.0 8.5 7.5 8.0 8.5 7.5 8.0 8.5 7.5 8.0 8.5
+100
+0
+32 34 36
+S-S )s( ycnetaL
+0.075
+75 10 50 4 0.1 0.050 0.4
+5 25 2 0.025 0.2
+0 0 0 0.0 0.000 0.0
+32 34 36 32 34 36 32 34 36 32 34 36 32 34 36 32 34 36
+200
+0
+7.4 7.6 7.8
+M-M
+)s(
+ycnetaL
+20 6 0.15 0.06 1.5
+200
+4 0.10 0.04 1.0
+10 100 2 0.05 0.02 0.5
+0 0 0 0.00 0.00 0.0
+7.4 7.6 7.8 7.4 7.6 7.8 7.4 7.6 7.8 7.4 7.6 7.8 7.4 7.6 7.8 7.4 7.6 7.8
+300
+200
+100
+0
+2.6 2.8 3.0
+L-L
+)s(
+ycnetaL
+30 40 1.5 0.15 0.06 2
+20 1.0 0.10 0.04 20 1
+10 0.5 0.05 0.02
+0 0 0.0 0.00 0.00 0
+2.6 2.8 3.0 2.6 2.8 3.0 2.6 2.8 3.0 2.6 2.8 3.0 2.6 2.8 3.0 2.6 2.8 3.0
+400
+200
+0
+4.1 4.2 4.3
+L-S
+)s(
+ycnetaL
+40 150 4 0.075 0.4
+20 10 5 0 0 2 0.2 0 0 . . 0 0 2 5 5 0 5
+0 0 0 0.0 0.000 0
+4.1 4.2 4.3 4.1 4.2 4.3 4.1 4.2 4.3 4.1 4.2 4.3 4.1 4.2 4.3 4.1 4.2 4.3
+200
+100
+0
+10 15
+Request Rate
+S-L
+)s(
+ycnetaL
+Llumnix INFaaS++ Round-Robin
+20 200 15 0.15 0.2
+10 0.10 0.050 10 100 5 0.05 0.025 0.1
+0 0 0 0.00 0.000 0.0
+10 15 10 15 10 15 10 15 10 15 10 15
+Request Rate Request Rate Request Rate Request Rate Request Rate Request Rate
+Figure11:Requestend-to-end,prefill,anddecodelatenciesandpreemptionlossofserving16LLaMA-7Binstances.Eachrow
+showsasetofexperimentsusingatracewithaspecificsequencelengthdistribution,asannotatedontheY-axislabels.
+20
+15
+10
+5
+0
+600 650 700 750 800 850 900 950 1000
+Time (s)
+)%(
+noitroporP
+noitatnemgarF
+memoryateachmomentastheportionofclusterfreememory
+INFaaS++ Llumnix
+thatcouldsatisfythedemandsofthehead-of-lineblocking
+requestsacrossallinstances,ifnofragmentation.Forexam-
+ple,ifthetotalfreememoryis8GB,withthreehead-of-line
+blockingrequestseachrequiring3GB,thenthefragmented
+memoryiscountedas6GB,i.e.,this6GBmemorycould
+satisfytwoqueuingrequestsifnofragmentation.Thismetric
+suggeststhememoryspacewastedduetofragmentation.We
+Figure12:Memoryfragmentationovertime. report the proportion of fragmented memory in the cluster
+totalmemory.Intheexample,ifthetotalmemoryis16GB,
+thentheproportionis37.5%(6/16).Figure12showsthefrag-
+ingrequeststoinstanceswiththelowestload,INFaaS++can mentationproportionoftheexperimentduringabusyperiod.
+stillexhibitlongqueuingdelaysduetofragmentation,espe- WeobservethatINFaaS++oftenshowshigherthan10%frag-
+cially for the long-tail requests with long inputs. Llumnix mentation,wastingasignificantamountofclustermemory.
+usesmigrationforde-fragmentationtoreducesuchqueuing Incomparison,thefragmentationisoften0inLlumnix.The
+delays,showingmoregainsintraceswithmorelonginputs. averagevaluesduringthisperiodare0.7%and7.9%forLlum-
+To take a closer look at the memory fragmentation, we nixandINFaaS++respectively(92%reduction),highlighting
+furtherpresentacasestudyontheexperimentoftheM-M theeffectofde-fragmentationusingmigration.
+tracewiththerequestrateof7.5.Wedefinethefragmented Llumnixalso improves theP99 decodelatencybyupto
+11
+75
+50
+25
+0
+2 4 6 8
+ytiroirP
+hgiH
+)s(
+ycnetaL
+Request P99 Request Mean Prefill P99 Prefill Mean Decode P99 Decode Mean Decode Execution Time
+10 1.5 0.15 0.075
+1.0 0.10 0.050 5.0 5 5
+0.5 0.05 0.025 2.5
+0 0 0.0 0.00 0.000 0.0
+2 4 6 8 2 4 6 8 2 4 6 8 2 4 6 8 2 4 6 8 2 4 6 8
+100
+50
+0
+2 4 6 8
+CV
+lamroN
+)s(
+ycnetaL
+Llumnix-base Llumnix
+10 0.15 0.075 7.5 10
+5 1 0.10 0.050 5.0
+5 0.05 0.025 2.5
+0 0 0 0.00 0.000 0.0
+2 4 6 8 2 4 6 8 2 4 6 8 2 4 6 8 2 4 6 8 2 4 6 8
+CV CV CV CV CV CV
+Figure13:Performanceofhigh-priorityandnormalrequests,asannotatedontheY-axislabels.
+2×,throughmigrationtoreducepreemptions.AlthoughIN- givinglowerinstanceloadsandinterferencetohighexecution
+FaaS++alreadyimplementsloadbalancingindispatchingto priorities,shownbythesimilargainsintheaveragedecode
+reduce preemptions,migration complements itby reacting computation time (the rightmost column). We also notice
+totherealsequencelengths,whichareunknownatrequest that Llumnix preserves similar performance of the normal
+arrivals. As shown in Figure 11, Llumnix significantly re- requests(thesecondrowinFigure13):Llumnixincreasesthe
+ducesthepreemptionloss,inmanycasesdowntonearzero. meanrequest,prefill,anddecodelatenciesofnormalrequests
+The reduction is 70.4% on average across all experiments, byupto4.5%,13%,and2%,respectively.
+whichtranslatestoanaveragereductionof1.3secondsinthe
+end-to-endrequestlatency.
+6.5 Auto-scaling
+6.4 SupportforPriorities We evaluate the auto-scaling capability of Llumnix using
+largerrangesofrequestratesandGammaCVstoshowthe
+WeevaluatethesupportforprioritiesofLlumnixbyrandomly adaptivitytoloadvariation.Bydefault,Llumnixusesascaling
+picking10%oftherequestsandassigninghighscheduling thresholdrangeof[10,60],i.e.,Llumnixscalesinstancesup
+andexecutionpriorities.WeusetraceswiththeShort-Short or down when the average freeness is under 10 or above
+lengthdistributionandGammaarrivaldistribution.Wevary 60; recallthatthismetricrepresentsthemostdecodesteps
+theCVparametertoshowtheinterferencetohigh-priority aninstancecanstillrunforgiventhecurrentbatch.Welet
+requests due to bursty workloads and load spikes. We em- INFaaS++usethesamescalingstrategy,thusbothLlumnix
+pirically choose a target memory load of 1,600 tokens for and INFaaS++ have the same degree of aggressiveness of
+high-priorityrequests,asweobservethatsuchloadpreserves scalingupinstances.Weuseamaximuminstancenumberof
+near-idealdecodespeed(refertoFigure4).Llumnixtranslates 16andtheLong-Longsequencelengthdistribution.
+thistargetloadtothecorrespondingmemoryheadroomfor WefirstvarytherequestratesusingPoissondistribution.
+high-priorityrequests.WecompareLlumnixwithLlumnix- AsshowninthefirstrowofFigure14,Llumnixconsistently
+base,whichsimplytreatsallrequestsasthesamepriority. achieveslatencyimprovementsacrossallrequestrates,e.g.,
+AsshowninthefirstrowinFigure13,Llumniximproves up to 12.2× for P99 prefill latency. We also measure the
+meanrequestlatenciesforthehigh-priorityby1.2×to1.5× resourcecostintermsofaverageinstancesused,showninthe
+with increasing CVs. HigherCVs leads to more high-load rightmostcolumn.Llumnixsavescostsbyupto16%,because
+periods,wherehigh-priorityrequestscansuffermoreinter- Llumnixincreasestheauto-scalingefficiencybysaturating
+ferenceifnotprotected.EvenwithhigherCVs,Llumnixstill ordrainingoutinstancesmorequickly.Wealsotestdifferent
+deliverssimilarlatenciesofhigh-priorityrequests,showing workloadburstinesswithvaryingCVsofGammadistribution
+theisolationLlumnixprovidestosuchrequests.Thisisbe- (request rate = 2). As shown in the second row, Llumnix
+causeLlumnixcan handlechanginghigh-priorityloadsby showssimilarimprovementsinlatenciesandcosts,e.g.,upto
+dynamicallycreatingspaceforthem,whichisdifficultinap- 11×forP99prefilllatencyand18%forthecost.
+proacheslikestaticresourcereservation.Forprefilllatencies, Finally,weexaminethecostefficiencyofLlumnixinterms
+Llumnixshows2.9×to8.6×gainsforthemean,and3.6×to ofhowaggressivelyLlumnixneedstoscaleoutinstancesto
+10×fortheP99,respectively.Thisisachievedbyreducing preserveacertainlatencyobjective,e.g.,agivenP99prefill
+thequeuingdelayswithhighschedulingpriorities.Llumnix latency.Wevarythescalingupthresholdt,andthescaling
+alsoimprovesdecodelatenciesby1.2×to1.5×forthemean thresholdrangeisdeterminedas[t,t+50].Highervaluesoft
+and1.3×to2.2×fortheP99,respectively.Thisimprovement meansthatLlumnixtendstousemoreinstances.Figure15
+comesfromtheaccelerationofthedecodecomputationby showstheP99prefilllatenciesandcostswithdifferentscaling
+12
+300
+200
+100
+0
+2.02.22.42.62.83.0
+Request Rate
+nossioP
+)s(
+ycnetaL
+Request P99 Request Mean Prefill P99 Prefill Mean Decode P99 Decode Mean
+30 60 2 0.15 0.06 15
+20 40 0.10 0.04 10
+1
+10 20 0.05 0.02 5
+0 0 0 0.00 0.00 0
+2.02.22.42.62.83.0 2.02.22.42.62.83.0 2.02.22.42.62.83.0 2.02.22.42.62.83.0 2.02.22.42.62.83.0 2.02.22.42.62.83.0
+Request Rate Request Rate Request Rate Request Rate Request Rate Request Rate
+muN
+ecnatsnI
+gvA
+Resource Cost
+300
+200
+100
+0
+2 3 4 5 6
+CV
+ammaG
+)s(
+ycnetaL
+0.075
+40 200 0.3
+10 0.2 0.050 10
+20 100 5 0.1 0.025 5
+0 0 0 0.0 0.000 0
+2 3 4 5 6 2 3 4 5 6 2 3 4 5 6 2 3 4 5 6 2 3 4 5 6 2 3 4 5 6
+CV CV CV CV CV CV
+muN
+ecnatsnI
+gvA
+INFaaS++ Llumnix
+Figure14:Auto-scalingofLLaMA-7BinstanceswithPoissonandGammadistributions,asannotatedontheY-axislabels.
+40
+30
+20
+10
+0
+12 14
+Avg Instance Num
+)s(
+ycnetaL
+lliferP
+99P
+100
+INFaaS++
+Llumnix 80
+60
+40
+Cost Saving: 36.49% 20
+0
+100 200 300 400 500
+Request rate
+Figure 15: P99 prefill latencies vs. average numbers of in-
+stanceswithvaryingscalingthresholds.
+thresholds. We observe that Llumnix achieves similarP99
+prefilllatency(roughly5s,thereddashline)whilesaving36%
+ofthecostcomparedtoINFaaS++,asaresultofthecombi-
+nationoftheabilitytoreducequeuingdelaysviamigration
+andthehigherauto-scalingefficiency.
+6.6 SchedulingScalability
+Weconductaschedulingstresstesttoexaminethescalability
+of Llumnix with 64 LLaMA-7B instances using higherre-
+questrates.Sincethisclusterexceedsthesizeofourtestbed,
+wereplacetherealGPUexecutioninvLLMwithasimple
+sleep command,whose duration is determined by offline
+measurementonA10GPUswithdifferentsequencelengths
+andbatchsizes.Webuildasimplecentralizedscheduleras
+thebaselinebyextendingthevLLMschedulertomanageall
+requestsacrossallinstances.Weissuerequestswithinputand
+outputlengthsof64tokenswithincreasingrequestrates.
+AsshowninFigure16,withincreasingrequestrates,the
+baselineexperiencesschedulingstallsduringtheinference
+computationofupto40msperiteration,translatingto1.7×
+slowdown.Suchstallsarearesultofthecommunicationbe-
+tweeninstancesandthecentralizedschedulersynchronizing
+requeststatusesandschedulingdecisions,whichbecomesa
+bottleneck under high load. By contrast,Llumnix exhibits
+near-zero scheduling stalls even under high request rates,
+showing the scalability ofthe distributedscheduling archi-
+)sm(
+ycnetaL
+Centralized (Decode Inference)
+Centralized (Scheduling Stall)
+Llumnix (Decode Inference)
+Llumnix (Scheduling Stall)
+Figure 16: Per-token latencies and scheduling stalls under
+increasingrequestratesusing64LLaMA-7Binstances.
+tecture. Llumnixoffloadsanddistributestheintra-instance
+scheduling logic across llumlets so that it is done in paral-
+lel and asynchronously with the global scheduling. More-
+over,llumletsonlyreportinstance-levelmetrics,insteadof
+theprecisestatusofeverysinglerequest,furtherimproving
+thecommunicationefficiency.
+7 RelatedWork
+LLM inference. As transformer models show signifi-
+canceinmodelserving,recentworks,suchasFasterTrans-
+former [46], TurboTransformer [25], LightSeq [61], and
+FlashAttention [21,22],optimize GPU kernels to improve
+the inference performance. SpotServe [41] supports LLM
+inferenceusingpreemptibleinstancesforimprovingcostef-
+ficiency.FastServe[63]optimizesrequestcompletiontimes
+using a preemptive time-slicing approach. AlpaServe [35]
+exploits pipeline parallelism to reduce serving latency for
+bursty workloads. To further increase the GPU utilization
+and serving throughput,Orca [67] proposes iteration-level
+scheduling(referredtoascontinuousbatchinginrecentworks
+andthispaper)andselectivebatching,whilevLLM[34]opti-
+mizesthememoryusagewithPageAttention.[55]proposes
+fairschedulingofrequestsonanLLMinstance.Priorworks
+mostlytargetsolo-instanceserving,thereforecomplementing
+to Llumnix. Llumnix explores the challenges and opportu-
+nities of deploying multi-instance LLM serving. The key
+13
+append-onlycharacteristicofKVcacheisexploitedtoenable addressestheheterogeneoussensitivitytopacking/spreading
+migrationcapabilityofrequestsintheinferenceengine.Such ofdifferentjobswithintrospectivejobmigration.Thischal-
+amechanismopensgreatpolicydesignspacetoofferprior- lenge becomes more complex forLLM serving due to the
+ity andperformance isolation,improve memory efficiency, unpredictableautoregressiveexecution.Llumnixexploitsre-
+and enable instance auto-scaling. We also plan to explore questmigrationatruntimetoreacttotheworkloaddynamics
+theinterplaybetweentheglobalschedulingacrossinstances tobetterreconcilethesetwogoals.
+withlocalschedulingtechniquesinsideeachinstance(e.g., Migration. Gandiva[64]enablesintrospectivemigration
+preemptive[63]andfair[55]scheduling)asfutureworks. fordeeplearningtrainingjobsduringscheduling.Itutilizes
+Requestscheduling. Tosupportdeeplearningmodelde- theinherentiterativebehaviorofdeeplearning,andconducts
+ployment,numeroussystems(e.g.,Clipper[19],Nexus[54], checkpoint-resumeapproachontheminimalworkingset(i.e.,
+DVABatch[20],andTritonServer[47])havebeenproposed mini-batchboundary)tomigratemodelweights.Eventhough
+tooptimizerequestschedulingforDNNinferenceserving.To LLM inference is iterative as well, directly migrating the
+meettheSLOsofDNNinferencerequests,Clockwork[29] entirestatesofarequestisunacceptable,becausethelatency
+utilizestheexecutionpredictabilityoftraditionalDNNs,while SLOofaninferencerequestiscrucial.Moreover,theworking
+Reef[33]andShepherd[68]performpreemptionstoserve set per request is linear to the sequence length,which can
+high-priority requests. AlpaServe [35] uses a simple load- beconsiderablegiven thetrendoflongercontexts[49,50].
+balancingdispatchingpolicybasedonqueuelengths.These The migration approach in Llumnix is inspired by virtual
+worksmostlyfocusontraditionalDNNmodelserving,where machinelivemigration[17].Bycarryingoutthemajorityof
+arequestrequiresonlyone-timeinferenceonthemodel.How- migrationwhileLLMrequestscontinuedecodingtokenson
+ever, LLM inference service requires autoregressive com- GPUs,Llumnixminimizesthedowntimeofrequestmigration,
+putationonmodelsforunpredictablenumbersofiterations makingthecostnegligibleregardlessofthesequencelengths.
+andintroducesintermediatestates(i.e.,KVcache),showing
+brandnewcharacteristics.DeepSpeed-MII[4],albeittarget-
+8 Conclusion
+ingmulti-instanceLLMserving,usesasimpleround-robin
+dispatchingpolicythatignoresLLMcharacteristics.Llumnix
+Llumnix,as implied by the name,represents our vision of
+steps further to incorporate request migration and ensures
+servingLLMsasUnix.Thisvisionoriginatesintheobserva-
+highthroughputandlowlatency,providesSLOforprioritized
+tionthatLLMsandmodernoperatingsystemshavecommon
+requests, and auto-scales instances for resource efficiency
+naturessuchastheuniversality,multi-tenancy,anddynamism,
+withaunifiedload-awaredynamicschedulingpolicy.
+andhence share similarrequirements andchallenges. This
+Beyondmultiplemodelinstances,INFaaS[53]furthersup-
+papertakes an important step towards this vision by draw-
+portsschedulingacrossmultiplemodeltypes/variants,con-
+inglessonsfromconventionalOSwisdomincluding:defini-
+sideringtheperformanceandaccuracyrequirementsindiffer-
+tionofclassicabstractionslikeisolationandprioritiesinthe
+enceapplications.ThisisalsoatypicalscenarioforLLMs:
+new context of LLM serving; implementation of the “con-
+forexample,fine-tunedmodelsforaspecifictask(e.g.,cod-
+textswitching”asthekeyapproachwithinferencerequest
+ing [3,13,30]); variants with different sizes or precisions
+migration;andcontinuous,dynamicrequestreschedulingex-
+([26,37,39])ofthebaseLLM.WeplantoextendLlumnixto
+ploitingthemigration.Allthesecombined,Llumnixdelivers
+supportmultiplemodeltypesinfuturework,consideringthe
+betterlatency,costefficiency,andsupportfordifferentiated
+largertradeoffspaceoflatency/throughputandaccuracy.
+SLOs,pointingtoanewwayofLLMserving.
+Isolation vs. fragmentation. The tradeoff between iso-
+lation and fragmentation, or that between workload pack-
+ingandspreading,havebeenaclassicschedulingchallenge. Acknowledgement
+Thatis,workloadpackingimprovesresourceutilization,at
+the expense of potential interference between co-located WethanktheanonymousOSDIreviewersandourshepherd
+workloads; spreading workloads,on the contrary,provides fortheirvaluable feedback,whichhelpedimprove the pre-
+better isolation but also increases resource fragmentation. sentation of this paper. We thank Shiru Ren for early dis-
+Many research efforts have been devoted to better balanc- cussion on VM live migration techniques. This work was
+ing isolation andfragmentation in datacenters forbig-data supportedbyAlibabaGroupthroughtheAlibabaResearch
+jobs and virtual machines, by identifying the interference- InternProgram.ThisworkwasalsosupportedbyNational
+sensitivityofworkloadsandoptimizedschedulingpolicies Key Research and Development Program of China (Grant
+([16,18,23,24,27,31,32,40,60,66]).Thischallengewasalso No. 2023YFB3001801),NationalNaturalScienceFounda-
+identifiedinGPUclustersfordeeplearningworkloads.Ama- tionofChina(GrantNo.62322201,62072018,U23B2020
+raletalproposedatopology-awareplacementalgorithmtoad- andU22A2028),FundamentalResearchFundsfortheCentral
+dressthetradeoffbetweenpackingandspreadingdeeplearn- Universities(YWF-23-L-1121),andStateKeyLaboratoryof
+ing training jobs on multi-GPU servers [12]. Gandiva [64] SoftwareDevelopmentEnvironment(SKLSDE-2023ZX-05).
+14
+References [15] TomB.Brown,BenjaminMann,NickRyder,Melanie
+Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind
+[1] Nccl,https://developer.nvidia.com/nccl/. Neelakantan, Pranav Shyam, Girish Sastry, Amanda
+Askell,SandhiniAgarwal,ArielHerbert-Voss,Gretchen
+[2] Chatgpt plus, 2023. https://openai.com/blog/
+Krueger,TomHenighan,RewonChild,AdityaRamesh,
+chatgpt-plus.
+DanielM.Ziegler,JeffreyWu,ClemensWinter,Christo-
+[3] Code llama, 2023. https://github.com/ pher Hesse,Mark Chen,Eric Sigler,Mateusz Litwin,
+facebookresearch/codellama. Scott Gray,Benjamin Chess,Jack Clark,Christopher
+Berner,SamMcCandlish,AlecRadford,IlyaSutskever,
+[4] Deepspeed-mii, 2023. https://github.com/
+and Dario Amodei. Language models are few-shot
+microsoft/DeepSpeed-MII.
+learners. InHugoLarochelle,Marc’AurelioRanzato,
+[5] Gloocollectivecommunicationlibrary,2023. https: Raia Hadsell,Maria-Florina Balcan,and Hsuan-Tien
+//github.com/facebookincubator/gloo. Lin,editors,AdvancesinNeuralInformationProcess-
+ingSystems33:AnnualConferenceonNeuralInforma-
+[6] Googlebard,2023. https://bard.google.com/. tionProcessingSystems2020,NeurIPS2020,December
+6-12,2020,virtual,2020.
+[7] Longllama, 2023. https://github.com/
+CStanKonrad/long_llama.
+[16] QuanChen,HailongYang,MinyiGuo,RamSrivatsa
+[8] Openaichatgpt,2023. https://chat.openai.com/. Kannan,JasonMars,andLingjiaTang. Prophet:Precise
+qos prediction on non-preemptive accelerators to im-
+[9] Rayserve,2023.https://docs.ray.io/en/latest/
+proveutilizationinwarehouse-scalecomputers. InPro-
+serve/index.html.
+ceedingsoftheTwenty-SecondInternationalConference
+[10] Sharegpt_gpt4, 2023. https://huggingface.co/ onArchitecturalSupportforProgrammingLanguages
+datasets/shibing624/sharegpt_gpt4. andOperatingSystems,pages17–32,2017.
+[11] vllm. https://github.com/vllm-project/vllm,
+[17] Christopher Clark, Keir Fraser, Steven Hand, Ja-
+2023.
+cob Gorm Hansen, Eric Jul, Christian Limpach, Ian
+[12] MarceloAmaral,JordàPolo,DavidCarrera,Seetharami Pratt,andAndrewWarfield. Livemigrationofvirtual
+Seelam,andMalgorzataSteinder.Topology-awareGPU machines. InAminVahdatandDavidWetherall,edi-
+scheduling for learning workloads in cloud environ- tors,2ndSymposiumonNetworkedSystemsDesignand
+ments. InProceedingsoftheInternationalConference Implementation(NSDI2005),May2-4,2005,Boston,
+for High Performance Computing, Networking, Stor- Massachusetts,USA,Proceedings.USENIX,2005.
+ageandAnalysis,page17,NewYork,NY,USA,2017.
+ACM. [18] Eli Cortez, Anand Bonde, Alexandre Muzio, Mark
+Russinovich,MarcusFontoura,andRicardoBianchini.
+[13] JinzeBai,ShuaiBai,YunfeiChu,ZeyuCui,KaiDang,
+Resourcecentral:Understandingandpredictingwork-
+Xiaodong Deng, Yang Fan, Wenbin Ge,Yu Han,Fei
+loadsforimprovedresourcemanagementinlargecloud
+Huang,BinyuanHui,LuoJi,MeiLi,JunyangLin,Runji
+platforms. In Proceedings ofthe 26thSymposium on
+Lin,DayihengLiu,GaoLiu,ChengqiangLu,Keming
+OperatingSystemsPrinciples,pages153–167,2017.
+Lu,JianxinMa,RuiMen,XingzhangRen,Xuancheng
+Ren,ChuanqiTan,SinanTan,JianhongTu,PengWang,
+[19] DanielCrankshaw,XinWang,GuilioZhou,MichaelJ.
+ShijieWang,WeiWang,ShengguangWu,BenfengXu,
+Franklin,JosephE.Gonzalez,andIonStoica. Clipper:
+JinXu,AnYang,HaoYang,JianYang,ShushengYang,
+Alow-latencyonlinepredictionservingsystem. In14th
+YangYao,BowenYu,HongyiYuan,ZhengYuan,Jian-
+USENIXSymposiumonNetworkedSystemsDesignand
+weiZhang,XingxuanZhang,YichangZhang,Zhenru
+Implementation(NSDI17),pages613–627,Boston,MA,
+Zhang,ChangZhou,JingrenZhou,XiaohuanZhou,and
+March2017.USENIXAssociation.
+TianhangZhu. Qwentechnicalreport. arXivpreprint
+arXiv:2309.16609,2023.
+[20] Weihao Cui, Han Zhao, Quan Chen, Hao Wei, Zirui
+[14] Tom Brown, Benjamin Mann, Nick Ryder, Melanie Li,DezeZeng,ChaoLi,andMinyiGuo. DVABatch:
+Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Diversity-awareMulti-EntryMulti-Exitbatchingforef-
+Neelakantan, Pranav Shyam, Girish Sastry, Amanda ficientprocessingofDNNservicesonGPUs. In2022
+Askell, et al. Language models are few-shot learn- USENIXAnnualTechnicalConference(USENIXATC
+ers. Advancesinneuralinformationprocessingsystems, 22),pages183–198,Carlsbad,CA,July2022.USENIX
+33:1877–1901,2020. Association.
+15
+[21] Tri Dao. Flashattention-2: Faster attention with [30] DayaGuo,QihaoZhu,DejianYang,ZhendaXie,Kai
+better parallelism and work partitioning. CoRR, Dong,WentaoZhang,GuantingChen,XiaoBi,Y.Wu,
+abs/2307.08691,2023. Y.K.Li,FuliLuo,YingfeiXiong,andWenfengLiang.
+Deepseek-coder:Whenthelargelanguagemodelmeets
+[22] Tri Dao, Daniel Y. Fu, Stefano Ermon, Atri Rudra,
+programming–theriseofcodeintelligence,2024.
+andChristopherRé. Flashattention:Fastandmemory-
+efficientexactattentionwithio-awareness,2022. [31] OriHadary,LukeMarshall,IshaiMenache,AbhisekPan,
+EsaiasEGreeff,DavidDion,StarDorminey,Shailesh
+[23] ChristinaDelimitrouandChristosKozyrakis. Paragon:
+Joshi,Yang Chen,Mark Russinovich,et al. Protean:
+QoS-awareschedulingforheterogeneousdatacenters.In
+VMallocationserviceatscale. In14thUSENIXSympo-
+ProceedingsoftheEighteenthInternationalConference
+siumonOperatingSystemsDesignandImplementation
+onArchitecturalSupportforProgrammingLanguages
+(OSDI20),pages845–861,2020.
+andOperatingSystems,ASPLOS’13,page77–88,New
+York,NY,USA,2013.AssociationforComputingMa- [32] JaeungHan,SeungheunJeon,Young-riChoi,andJae-
+chinery. hyuk Huh. Interference management for distributed
+parallelapplications in consolidatedclusters. In Pro-
+[24] ChristinaDelimitrouandChristosKozyrakis. Quasar:
+ceedingsoftheTwenty-FirstInternationalConference
+resource-efficientandqos-aware clustermanagement.
+onArchitecturalSupportforProgrammingLanguages
+In Proceedings of the 19th International Conference
+andOperatingSystems,ASPLOS’16,page443–456,
+onArchitecturalSupportforProgrammingLanguages
+NewYork,NY,USA,2016.AssociationforComputing
+andOperatingSystems,ASPLOS’14,page127–144,
+Machinery.
+NewYork,NY,USA,2014.AssociationforComputing
+Machinery. [33] MingcongHan,HanzeZhang,RongChen,andHaibo
+Chen. Microsecond-scale preemption for concurrent
+[25] Jiarui Fang,Yang Yu,Chengduo Zhao,and Jie Zhou.
+GPU-accelerated DNN inferences. In 16th USENIX
+Turbotransformers:Anefficientgpuservingsystemfor
+Symposium on Operating Systems Design and Imple-
+transformermodels. InProceedingsofthe26thACM
+mentation (OSDI 22), pages 539–558, Carlsbad, CA,
+SIGPLAN Symposium on Principles and Practice of
+July2022.USENIXAssociation.
+ParallelProgramming,PPoPP’21,page389–402,New
+York,NY,USA,2021.AssociationforComputingMa- [34] Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying
+chinery. Sheng,LianminZheng,CodyHaoYu,JosephGonzalez,
+Hao Zhang, and Ion Stoica. Efficient memory man-
+[26] EliasFrantar,SalehAshkboos,TorstenHoefler,andDan
+agementforlarge language modelserving withpage-
+Alistarh. OPTQ:Accuratequantizationforgenerative
+dattention. InProceedingsofthe29thSymposiumon
+pre-trainedtransformers. InTheEleventhInternational
+OperatingSystemsPrinciples,SOSP’23,page611–626,
+ConferenceonLearningRepresentations,2023.
+NewYork,NY,USA,2023.AssociationforComputing
+[27] PanagiotisGarefalakis,KonstantinosKaranasos,Peter Machinery.
+Pietzuch,ArunSuresh,andSriramRao.Medea:schedul-
+[35] ZhuohanLi,LianminZheng,YinminZhong,Vincent
+ingoflongrunningapplicationsinsharedproduction
+Liu,YingSheng,XinJin,YanpingHuang,ZhifengChen,
+clusters. InProceedingsofthethirteenthEuroSyscon-
+Hao Zhang,Joseph E. Gonzalez,and Ion Stoica. Al-
+ference,pages1–13,2018.
+paServe:Statisticalmultiplexingwithmodelparallelism
+[28] ArpanGujarati,RezaKarimi,SafyaAlzayat,WeiHao, for deep learning serving. In 17th USENIX Sympo-
+Antoine Kaufmann, Ymir Vigfusson, and Jonathan sium on Operating Systems Design and Implementa-
+Mace. Serving{DNNs}likeclockwork:Performance tion(OSDI23),pages663–679,Boston,MA,July2023.
+predictability from the bottom up. In 14th USENIX USENIXAssociation.
+Symposium on Operating Systems Design and Imple-
+[36] Percy Liang, Rishi Bommasani, Tony Lee, Dimitris
+mentation(OSDI20),pages443–462,2020.
+Tsipras,DilaraSoylu,MichihiroYasunaga,YianZhang,
+[29] ArpanGujarati,RezaKarimi,SafyaAlzayat,WeiHao, DeepakNarayanan,YuhuaiWu,AnanyaKumar,Ben-
+Antoine Kaufmann, Ymir Vigfusson, and Jonathan jaminNewman,BinhangYuan,BobbyYan,CeZhang,
+Mace. Servingdnnslikeclockwork:Performancepre- ChristianCosgrove,ChristopherD.Manning,Christo-
+dictabilityfromthebottomup. In14thUSENIXSym- pherRé,DianaAcosta-Navas,DrewA. Hudson,Eric
+posiumonOperatingSystemsDesignandImplementa- Zelikman,Esin Durmus,FaisalLadhak,Frieda Rong,
+tion(OSDI20),pages443–462.USENIXAssociation, Hongyu Ren, Huaxiu Yao, Jue Wang, Keshav San-
+November2020. thanam,LaurelJ.Orr,LuciaZheng,MertYüksekgönül,
+16
+MiracSuzgun,NathanKim,NeelGuha,NiladriS.Chat- [45] NVIDIA. Using multiple nccl com-
+terji,OmarKhattab,PeterHenderson,QianHuang,Ryan municators concurrently. https://
+Chi,SangMichaelXie,ShibaniSanturkar,SuryaGan- docs.nvidia.com/deeplearning/nccl/
+guli,TatsunoriHashimoto,ThomasIcard,TianyiZhang, user-guide/docs/usage/communicators.html#
+VishravChaudhary,WilliamWang,XuechenLi,Yifan using-multiple-nccl-communicators-concurrently.
+Mai,YuhuiZhang,andYutaKoreeda. Holisticevalua-
+tionoflanguagemodels. CoRR,abs/2211.09110,2022. [46] NVIDIA. Fastertransformer. https://github.com/
+NVIDIA/FasterTransformer,2023.
+[37] JiLin,JiamingTang,HaotianTang,ShangYang,Wei-
+MingChen,Wei-ChenWang,GuangxuanXiao,Xingyu [47] NVIDIA. Triton inference server. https://github.
+Dang,ChuangGan,andSongHan. Awq:Activation- com/triton-inference-server/server,2023.
+awareweightquantizationforllmcompressionandac-
+[48] OpenAI. Openai api,2020. https://openai.com/
+celeration. InMLSys,2024.
+blog/openai-api.
+[38] Hao Liu,Matei Zaharia,and Pieter Abbeel. Ring at-
+[49] OpenAI. Gpt-4technicalreport,2023.
+tention with blockwise transformers for near-infinite
+context. CoRR,abs/2310.01889,2023.
+[50] OpenAI. Gpt-4 turbo. https://help.openai.com/
+[39] ShumingMa,HongyuWang,LingxiaoMa,LeiWang,
+en/articles/8555510-gpt-4-turbo,2023.
+WenhuiWang,ShaohanHuang,LiDong,RuipingWang,
+[51] LongOuyang,JeffreyWu,XuJiang,DiogoAlmeida,
+Jilong Xue,andFuru Wei. The era of1-bitllms: All
+CarrollL.Wainwright,PamelaMishkin,ChongZhang,
+largelanguagemodelsarein1.58bits,2024.
+Sandhini Agarwal, Katarina Slama, Alex Ray, John
+[40] JasonMars,LingjiaTang,RobertHundt,KevinSkadron, Schulman, Jacob Hilton, Fraser Kelton, Luke Miller,
+andMaryLouSoffa. Bubble-up:Increasingutilization MaddieSimens,AmandaAskell,PeterWelinder,PaulF.
+inmodernwarehousescalecomputersviasensibleco- Christiano,Jan Leike,and Ryan Lowe. Training lan-
+locations. InProceedingsofthe44thannualIEEE/ACM guagemodelstofollowinstructionswithhumanfeed-
+InternationalSymposiumonMicroarchitecture,pages back. InNeurIPS,2022.
+248–259,2011.
+[52] Reiner Pope, Sholto Douglas, Aakanksha Chowdh-
+[41] Xupeng Miao,Chunan Shi,Jiangfei Duan,Xiaoli Xi, ery,JacobDevlin,JamesBradbury,AnselmLevskaya,
+DahuaLin,BinCui,andZhihaoJia. Spotserve:Serv- JonathanHeek,KefanXiao,ShivaniAgrawal,andJeff
+ing generative large language models on preemptible Dean. Efficientlyscalingtransformerinference,2022.
+instances,2023.
+[53] FranciscoRomero,QianLi,NeerajaJYadwadkar,and
+[42] Philipp Moritz, Robert Nishihara, Stephanie Wang, ChristosKozyrakis. {INFaaS}:Automatedmodel-less
+AlexeyTumanov,RichardLiaw,EricLiang,MelihEli- inferenceserving. In2021USENIXAnnualTechnical
+bol,ZonghengYang,WilliamPaul,MichaelI.Jordan, Conference(USENIXATC21),pages397–411,2021.
+andIonStoica.Ray:Adistributedframeworkforemerg-
+ingAIapplications. In13thUSENIXSymposiumonOp- [54] HaichenShen,LequnChen,YuchenJin,LiangyuZhao,
+eratingSystemsDesignandImplementation(OSDI18), BingyuKong,MatthaiPhilipose,ArvindKrishnamurthy,
+pages561–577,Carlsbad,CA,October2018.USENIX andRaviSundaram. Nexus:Agpuclusterenginefor
+Association. acceleratingdnn-basedvideoanalysis. InProceedings
+ofthe27thACMSymposiumonOperatingSystemsPrin-
+[43] AvanikaNarayan,InesChami,LaurelJ.Orr,andChristo- ciples,SOSP’19,page322–337,NewYork,NY,USA,
+pherRé. Can foundation models wrangle yourdata? 2019.AssociationforComputingMachinery.
+Proc.VLDBEndow.,16(4):738–746,2022.
+[55] Ying Sheng, Shiyi Cao, Dacheng Li, Banghua Zhu,
+[44] DeepakNarayanan,MohammadShoeybi,JaredCasper, ZhuohanLi,DanyangZhuo,JosephE.Gonzalez,and
+PatrickLeGresley,MostofaPatwary,VijayKorthikanti, IonStoica. Fairnessinservinglargelanguagemodels,
+DmitriVainbrand,PrethviKashinkunti,JulieBernauer, 2023.
+BryanCatanzaro,AmarPhanishayee,andMateiZaharia.
+Efficient large-scale language model training on gpu [56] Mohammad Shoeybi, Mostofa Patwary, Raul Puri,
+clustersusingmegatron-lm. InProceedingsoftheInter- PatrickLeGresley,JaredCasper,andBryanCatanzaro.
+nationalConferenceforHighPerformanceComputing, Megatron-LM:TrainingMulti-BillionParameterLan-
+Networking,StorageandAnalysis,SC’21,NewYork, guageModelsUsingModelParallelism. arXivpreprint
+NY,USA,2021.AssociationforComputingMachinery. arXiv:1909.08053,2019.
+17
+[57] HugoTouvron,ThibautLavril,GautierIzacard,Xavier [63] BingyangWu,YinminZhong,ZiliZhang,GangHuang,
+Martinet,Marie-AnneLachaux,TimothéeLacroix,Bap- Xuanzhe Liu,andXin Jin. Fast distributed inference
+tisteRozière,NamanGoyal,EricHambro,FaisalAzhar, servingforlargelanguagemodels,2023.
+Aurelien Rodriguez, Armand Joulin, Edouard Grave,
+[64] WencongXiao,RomilBhardwaj,RamachandranRam-
+andGuillaumeLample. Llama:Openandefficientfoun-
+jee,MuthianSivathanu,NipunKwatra,ZhenhuaHan,
+dationlanguagemodels,2023.
+PratyushPatel,XuanPeng,HanyuZhao,QuanluZhang,
+[58] Hugo Touvron, Louis Martin, Kevin Stone, Peter Al- Fan Yang,and Lidong Zhou. Gandiva: Introspective
+bert,AmjadAlmahairi,YasmineBabaei,NikolayBash- clusterschedulingfordeeplearning. In13thUSENIX
+lykov,SoumyaBatra,PrajjwalBhargava,ShrutiBhosale, Symposium on Operating Systems Design and Imple-
+DanBikel,LukasBlecher,CristianCantonFerrer,Moya mentation,OSDI2018,Carlsbad,CA,USA,October8-
+Chen,Guillem Cucurull,David Esiobu,Jude Fernan- 10,2018,pages595–610.USENIXAssociation,2018.
+des,JeremyFu,WenyinFu,BrianFuller,CynthiaGao,
+[65] WenhanXiong,JingyuLiu,IgorMolybog,HejiaZhang,
+VedanujGoswami,NamanGoyal,AnthonyHartshorn,
+Prajjwal Bhargava, Rui Hou, Louis Martin, Rashi
+SagharHosseini,RuiHou,HakanInan,MarcinKardas,
+Rungta,Karthik Abinav Sankararaman,Barlas Oguz,
+ViktorKerkez,MadianKhabsa,IsabelKloumann,Artem
+Madian Khabsa, Han Fang, Yashar Mehdad, Sharan
+Korenev, Punit Singh Koura, Marie-Anne Lachaux,
+Narang, Kshitiz Malik, Angela Fan, Shruti Bhosale,
+ThibautLavril,JenyaLee,DianaLiskovich,YinghaiLu,
+Sergey Edunov,Mike Lewis,Sinong Wang,and Hao
+YuningMao,XavierMartinet,TodorMihaylov,Pushkar
+Ma. Effectivelong-contextscalingoffoundationmod-
+Mishra, Igor Molybog, Yixin Nie, Andrew Poulton,
+els,2023.
+JeremyReizenstein,RashiRungta,KalyanSaladi,Alan
+Schelten,RuanSilva,EricMichaelSmith,RanjanSub-
+[66] HailongYang,AlexBreslow,JasonMars,andLingjia
+ramanian,XiaoqingEllenTan,BinhTang,RossTaylor,
+Tang. Bubble-flux: precise online qos management
+Adina Williams, Jian Xiang Kuan, Puxin Xu, Zheng
+for increased utilization in warehouse scale comput-
+Yan,IliyanZarov,YuchenZhang,AngelaFan,Melanie
+ers. In Proceedings ofthe 40thAnnualInternational
+Kambadur,SharanNarang,AurelienRodriguez,Robert
+SymposiumonComputerArchitecture,ISCA’13,page
+Stojnic,SergeyEdunov,andThomasScialom. Llama2:
+607–618,NewYork,NY,USA,2013.Associationfor
+Openfoundationandfine-tunedchatmodels,2023.
+ComputingMachinery.
+[59] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob
+[67] Gyeong-InYu,JooSeongJeong,Geon-WooKim,Soo-
+Uszkoreit,LlionJones,AidanNGomez,ŁukaszKaiser,
+jeongKim,andByung-GonChun. Orca:Adistributed
+and Illia Polosukhin. Attention is all you need. In
+servingsystemforTransformer-Basedgenerativemod-
+Advances in Neural Information Processing Systems,
+els. In16thUSENIXSymposiumonOperatingSystems
+pages6000–6010,2017.
+DesignandImplementation(OSDI22),pages521–538,
+Carlsbad,CA,July2022.USENIXAssociation.
+[60] Abhishek Verma, Luis Pedrosa, Madhukar Korupolu,
+DavidOppenheimer,EricTune,andJohnWilkes.Large-
+[68] HongZhang,YupengTang,AnuragKhandelwal,and
+scaleclustermanagementatGooglewithBorg. InPro-
+IonStoica. SHEPHERD:ServingDNNsinthewild. In
+ceedings of the Tenth European Conference on Com-
+20thUSENIXSymposiumonNetworkedSystemsDesign
+puter Systems, page 18, New York, NY, USA, 2015.
+andImplementation(NSDI23),pages787–808,Boston,
+ACM.
+MA,April2023.USENIXAssociation.
+[61] XiaohuiWang,YingXiong,YangWei,MingxuanWang,
+andLeiLi. Lightseq:Ahighperformanceinferenceli-
+braryfortransformers. InYoung-bumKim,YunyaoLi,
+andOwen Rambow,editors,Proceedings ofthe 2021
+ConferenceoftheNorthAmericanChapteroftheAssoci-
+ationforComputationalLinguistics:HumanLanguage
+Technologies:IndustryPapers,NAACL-HLT2021,On-
+line,June6-11,2021,pages113–120.Associationfor
+ComputationalLinguistics,2021.
+[62] Yuxin Wang, Yuhan Chen, Zeyu Li, Zhenheng Tang,
+Rui Guo,Xin Wang,Qiang Wang,Amelie Chi Zhou,
+andXiaowenChu. Towardsefficientandreliablellm
+serving:Areal-worldworkloadstudy,2024.
+18
+A ArtifactAppendix • The artifact is directly based on the vLLM code base,
+whereastheofficialreleaseisastandalonePythonlibrary,
+making it more extensible and non-intrusive to backend
+Abstract
+inferenceengines.
+Thisartifactincludesthesourcecodeandscriptstorunthe
+• Theartifactisnotfault-tolerant,whereastheofficialrelease
+experimentsandreproducetheevaluationresultsofthispaper.
+providesfaulttoleranceforeachcomponent.
+• Theofficialreleaseisstillbeingactivelydeveloped,and
+Scope hassupportedorwillsupportaseriesofnewfeatures,such
+asscalableAPIservicingviadistributedrequestfrontends,
+Theartifactcanbeusedtoreproducetheresultsofthefollow- support for newer versions of vLLM and more models,
+ingexperiments. furtherimprovementsoftheschedulingpolicies,etc.
+• Migrationefficiency:Figure10. The artifact is sufficient to reproduce the experiment re-
+sultsinthispaper.However,ifyouwanttouseLlumnixin
+• Servingperformance:Figure11.
+productionorconductfurtherresearch,wedorecommendthe
+• Supportforpriorities:Figure13.
+officialrelease.
+• Auto-scaling:Figure14andFigure15.
+Contents
+Thisartifactincludesthefollowingcontents.
+• SourcecodeofaprototypeimplementationofLlumnix.
+• Scripts to prepare the environment,run the experiments,
+plotthefigures,andvalidatetheclaimsinthispaperauto-
+matically.
+• AREADMEfileincludingdetailedinstructionsonhowtouse
+thisartifact.
+Hosting
+Theartifactispubliclyavailableathttps://github.com/
+AlibabaPAI/llumnix(theosdi24aebranch).Notethatthis
+isnotthesamebranchastheofficialreleaseofLlumnix(the
+mainbranch).Wewilldescribetheirdifferencelater.
+Requirements
+TheartifactrunsonGPUmachines,withsoftwaredependen-
+cies mostly the same as those of vLLM. To reproduce our
+results,youwouldneed4GPUmachineseachwith4A10
+GPUs(24GB).WerecommendthatyouusethesameVM
+typeasinourexperiments(ecs.gn7i-c32g1.32xlargeon
+AlibabaCloud).
+DifferencefromtheOfficialRelease
+This artifact is a research prototype and was used during
+the experiments of this paper. After the paper submission,
+we refactored it into a new implementation that is more
+production-ready,i.e.,theofficialrelease,asdescribedin§5.
+Majordifferencesbetweenthetwoversionsinclude:
+19

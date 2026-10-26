@@ -1,0 +1,33 @@
+--- kvt_migration_frontend.py.before
++++ kvt_migration_frontend.py
+@@
++_STRUCTURED_MIGRATION_LOG_ENABLED = os.getenv(
++    "LLUMNIX_ENABLE_STRUCTURED_MIGRATION_LOG", "0"
++).lower() in ("1", "true", "yes")
++_STRUCTURED_EVENT_NAMES = {
++    "migration_initiated": "migration_start",
++    "final_suspend_begin": "migration_suspend",
++    "dst_resume": "migration_resume",
++    "migration_done": "migration_end",
++    "invalid_migration_endpoint": "migration_fail",
++    "stale_migration_update": "migration_fail",
++    "migration_abort": "migration_abort",
++}
+@@
+ def _migration_efficiency_event(event_name: str, **fields):
++    timestamp = time.time()
+@@
++    normalized_name = _STRUCTURED_EVENT_NAMES.get(event_name)
++    if _STRUCTURED_MIGRATION_LOG_ENABLED and normalized_name:
++        normalized = {
++            "event": normalized_name,
++            "request_id": fields.get("request_id"),
++            "source_instance_id": fields.get("source_instance_id"),
++            "target_instance_id": fields.get("destination_instance_id"),
++            "timestamp": timestamp,
++            "timestamp_type": "time.time",
++            "blocks": fields.get("block_count"),
++            "is_last_stage": fields.get("is_last_stage"),
++            "reason": fields.get("reason"),
++        }
++        logger.info("LLUMNIX_MIGRATION_EVENT %s", json.dumps(normalized, sort_keys=True, default=str))

@@ -1,0 +1,12 @@
+ray[default] >= 2.45.0, <=2.47.1
+pyarrow  # Required for Ray data.
+aiohttp
+scipy
+pandas
+matplotlib
+func_timeout
+pyyaml
+yacs
+pyzmq
+setuptools <= 70.0.0
+uvloop

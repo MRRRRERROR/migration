@@ -1,0 +1,28 @@
+{
+  "audited_at": "2026-09-22T14:31:00+08:00",
+  "model_generation_config_path": "/data/models/Qwen2.5-7B-Instruct/generation_config.json",
+  "generation_config_has_max_new_tokens": false,
+  "generation_config_has_max_length": false,
+  "generation_config": {
+    "bos_token_id": 151643,
+    "pad_token_id": 151643,
+    "do_sample": true,
+    "eos_token_id": [151645, 151643],
+    "repetition_penalty": 1.05,
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "transformers_version": "4.37.0"
+  },
+  "vllm_version": "0.24.0",
+  "vllm_generation_config_mode": "auto",
+  "vllm_loaded_generation_config": true,
+  "server_log_evidence": "Default vLLM sampling parameters have been overridden by the model's generation_config.json",
+  "request_max_tokens": "omitted",
+  "request_max_completion_tokens": "omitted",
+  "request_ignore_eos": "omitted; server default false",
+  "server_max_model_len": 4096,
+  "platform_get_max_output_tokens": "sys.maxsize",
+  "additional_platform_output_cap": false,
+  "effective_output_limit": "4096 - prompt_tokens, imposed by the server context window"
+}

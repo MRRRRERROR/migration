@@ -1,0 +1,121 @@
+{
+  "total_requests": 2,
+  "finished_requests": 2,
+  "aborted_requests": 0,
+  "timeout_requests": 0,
+  "success_rate": 1.0,
+  "migrated_request_count": 1,
+  "migration_count": 1,
+  "parsed_migration_event_count": 4,
+  "visible_downtime_ms": {
+    "mean": 160.0,
+    "median": 160.0,
+    "p95": 160.0,
+    "p99": 160.0,
+    "max": 160.0,
+    "count": 1
+  },
+  "server_downtime_ms": {
+    "mean": 110.0,
+    "median": 110.0,
+    "p95": 110.0,
+    "p99": 110.0,
+    "max": 110.0,
+    "count": 1
+  },
+  "extra_downtime_ms": {
+    "mean": 140.0,
+    "median": 140.0,
+    "p95": 140.0,
+    "p99": 140.0,
+    "max": 140.0,
+    "count": 1
+  },
+  "migration_internal_time_ms": {
+    "mean": 140.0,
+    "median": 140.0,
+    "p95": 140.0,
+    "p99": 140.0,
+    "max": 140.0,
+    "count": 1
+  },
+  "downtime_computable_request_count": 1,
+  "server_downtime_computable_request_count": 1,
+  "server_downtime_definition": "dst_resume - final_suspend_begin",
+  "strict_ttft_violation_rate": 0.0,
+  "strict_tpot_interval_violation_rate": 1.0,
+  "strict_request_tpot_violation_rate": 1.0,
+  "strict_request_slo_violation_rate": 1.0,
+  "normal_ttft_violation_rate": 0.0,
+  "normal_tpot_interval_violation_rate": 0.14285714285714285,
+  "normal_request_tpot_violation_rate": 0.5,
+  "normal_request_slo_violation_rate": 0.5,
+  "loose_ttft_violation_rate": 0.0,
+  "loose_tpot_interval_violation_rate": 0.14285714285714285,
+  "loose_request_tpot_violation_rate": 0.5,
+  "loose_request_slo_violation_rate": 0.5,
+  "migrated_requests": {
+    "count": 1,
+    "ttft_p99_ms": 100.0,
+    "e2e_p99_ms": 330.0,
+    "mean_tpot_ms": 44.0,
+    "p99_tpot_ms": 135.2,
+    "slo_violation_rate": 1.0,
+    "migrated_count": 1,
+    "migrated_ratio": 1.0,
+    "finish_rate": 1.0
+  },
+  "non_migrated_requests": {
+    "count": 1,
+    "ttft_p99_ms": 80.0,
+    "e2e_p99_ms": 130.0,
+    "mean_tpot_ms": 20.0,
+    "p99_tpot_ms": 20.0,
+    "slo_violation_rate": 0.0,
+    "migrated_count": 0,
+    "migrated_ratio": 0.0,
+    "finish_rate": 1.0
+  },
+  "migrated_request_slo_violation_rate": 1.0,
+  "non_migrated_request_slo_violation_rate": 0.0,
+  "by_request_type": {
+    "short": {
+      "count": 2,
+      "ttft_p99_ms": 99.8,
+      "e2e_p99_ms": 328.0,
+      "mean_tpot_ms": 32.0,
+      "p99_tpot_ms": 134.048,
+      "slo_violation_rate": 0.5,
+      "migrated_count": 1,
+      "migrated_ratio": 0.5,
+      "finish_rate": 1.0
+    }
+  },
+  "by_priority": {
+    "normal": {
+      "count": 2,
+      "ttft_p99_ms": 99.8,
+      "e2e_p99_ms": 328.0,
+      "mean_tpot_ms": 32.0,
+      "p99_tpot_ms": 134.048,
+      "slo_violation_rate": 0.5,
+      "migrated_count": 1,
+      "migrated_ratio": 0.5,
+      "finish_rate": 1.0
+    }
+  },
+  "slo_thresholds_ms": {
+    "strict": {
+      "ttft": 500.0,
+      "tpot": 14.5
+    },
+    "normal": {
+      "ttft": 1000.0,
+      "tpot": 25.0
+    },
+    "loose": {
+      "ttft": 2000.0,
+      "tpot": 50.0
+    }
+  }
+}

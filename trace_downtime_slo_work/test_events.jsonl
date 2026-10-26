@@ -1,0 +1,4 @@
+{"event_name":"migration_initiated","request_id":"req-migrated","timestamp_ms":1000150.0,"source_instance_id":"src","destination_instance_id":"dst"}
+{"event_name":"final_suspend_begin","request_id":"req-migrated","timestamp_ms":1000170.0}
+{"event_name":"dst_resume","request_id":"req-migrated","timestamp_ms":1000280.0}
+{"event_name":"migration_done","request_id":"req-migrated","timestamp_ms":1000290.0}

@@ -1,0 +1,28 @@
+name: whl_build
+
+on:
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+
+jobs:
+  whl_build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Set up Python 
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+    - name: Build whl
+      run: |
+        python3 -m pip install --upgrade setuptools wheel
+        python3 -m pip install protobuf==3.20.1 grpcio grpcio-tools setuptools_scm
+        python3 setup.py bdist_wheel
+        ls dist

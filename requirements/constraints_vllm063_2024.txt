@@ -1,0 +1,17 @@
+# Compatibility caps for vLLM 0.6.3.post1. Its published metadata leaves
+# several fast-moving dependencies unbounded; 2026 releases have incompatible
+# APIs even though pip considers them valid.
+transformers==4.46.3
+tokenizers==0.20.3
+huggingface-hub==0.26.5
+openai==1.54.4
+fastapi==0.115.4
+starlette==0.41.2
+pydantic==2.9.2
+uvicorn==0.32.0
+protobuf==5.28.3
+datasets==3.1.0
+mistral-common==1.5.1
+opencv-python-headless==4.10.0.84
+prometheus-fastapi-instrumentator==7.0.0
+tiktoken==0.7.0

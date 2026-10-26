@@ -1,0 +1,14 @@
+ray[default] >= 2.45.0, <=2.47.1
+pyarrow  # Required for Ray data.
+aiohttp == 3.8.4
+aiohttp-cors == 0.7.0
+pandas
+matplotlib
+pyyaml
+yacs
+protobuf == 3.20.1
+opentelemetry-sdk>=1.26.0,<1.27.0
+opentelemetry-api>=1.26.0,<1.27.0
+opentelemetry-exporter-otlp>=1.26.0,<1.27.0
+setuptools_scm == 7.1.0
+uvloop

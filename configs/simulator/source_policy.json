@@ -1,0 +1,24 @@
+{
+  "description": "Synthetic functional case, not measured performance. Pair and time are external inputs; request selection executes snapshot code.",
+  "kv_bytes_per_token": 57344,
+  "output_wire_bytes_per_token": 64,
+  "instances": [
+    {"id": "source", "domain": "a", "kv_blocks": 4096, "max_batch_tokens": 256},
+    {"id": "target", "domain": "b", "kv_blocks": 4096, "max_batch_tokens": 256}
+  ],
+  "links": [
+    {"source": "a", "target": "b", "bandwidth_bytes_per_ms": 125000, "latency_ms": 10},
+    {"source": "b", "target": "a", "bandwidth_bytes_per_ms": 125000, "latency_ms": 10}
+  ],
+  "requests": [
+    {"request_id": "short", "instance": "source", "prompt_length": 128, "max_tokens": 128},
+    {"request_id": "long", "instance": "source", "prompt_length": 512, "max_tokens": 128},
+    {"request_id": "background", "instance": "target", "prompt_length": 256, "max_tokens": 128}
+  ],
+  "selections": [
+    {"source": "source", "target": "target", "at_ms": 80,
+     "policy": "SR", "budget_type": "NUM_REQ", "budget": 1, "seed": 7,
+     "composite_min_remaining": 8, "composite_max_context": 4096,
+     "mode": "token_live", "migration_options": {"max_rounds": 3, "final_gap_tokens": 0}}
+  ]
+}

@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Llumnix 实验数据可视化报告</title>
+<style>
+:root { --bg:#f7f8fb; --panel:#ffffff; --text:#111827; --muted:#6b7280; --line:#e5e7eb; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:"Microsoft YaHei", "Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--text); }
+header { padding:28px 32px 18px; background:#ffffff; border-bottom:1px solid var(--line); }
+h1 { margin:0 0 8px; font-size:28px; }
+.sub { color:var(--muted); line-height:1.6; max-width:1100px; }
+main { padding:24px 32px 40px; }
+.cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; }
+.card span { display:block; color:var(--muted); font-size:13px; margin-bottom:8px; }
+.card strong { font-size:24px; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:18px; min-width:0; }
+.panel.wide { grid-column:1 / -1; }
+h2 { margin:0 0 12px; font-size:18px; }
+.ylabel { color:var(--muted); font-size:12px; margin-bottom:10px; }
+.bars { display:flex; flex-direction:column; gap:12px; }
+.bar-row { display:grid; grid-template-columns:190px 1fr 94px; align-items:center; gap:10px; }
+.bar-label { font-size:13px; color:#374151; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bar-track { height:18px; background:#eef2f7; border-radius:4px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:4px; }
+.bar-value { text-align:right; font-variant-numeric:tabular-nums; font-size:13px; color:#374151; }
+.status-list { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
+.status-list li { display:grid; grid-template-columns:74px 230px 1fr; gap:10px; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:10px; }
+.badge { display:inline-flex; justify-content:center; padding:4px 8px; border-radius:999px; font-size:12px; }
+.badge.ok { background:#dcfce7; color:#166534; }
+.badge.bad { background:#fee2e2; color:#991b1b; }
+em { color:var(--muted); font-style:normal; font-size:13px; }
+.legend { display:flex; flex-wrap:wrap; gap:14px; margin-top:8px; color:#374151; font-size:13px; }
+.legend span { display:inline-flex; align-items:center; gap:6px; }
+.legend i { width:12px; height:12px; display:inline-block; border-radius:2px; }
+.table-wrap { overflow:auto; }
+table { border-collapse:collapse; width:100%; font-size:13px; }
+th,td { border-bottom:1px solid #eef2f7; text-align:left; padding:9px 10px; vertical-align:top; }
+th { background:#f8fafc; position:sticky; top:0; }
+.muted { color:var(--muted); }
+.note { background:#fff7ed; border:1px solid #fed7aa; color:#7c2d12; border-radius:8px; padding:12px 14px; margin-bottom:18px; line-height:1.6; }
+footer { color:var(--muted); padding:20px 32px 40px; font-size:13px; }
+@media (max-width: 900px) { .cards,.grid { grid-template-columns:1fr; } .bar-row { grid-template-columns:1fr; } .bar-value { text-align:left; } .status-list li { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+<h1>Llumnix 实验数据可视化报告</h1>
+<div class="sub">围绕论文关注的服务性能、迁移效率、负载/碎片状态进行可视化。数据来源为当前目录下三组 baseline 与 Llumnix 方法实验日志；原始数据总表为 <code>all_experiment_raw_data.csv</code>。</div>
+</header>
+<main>
+
+<div class="cards">
+  <div class="card"><span>实验组数量</span><strong>4</strong></div>
+  <div class="card"><span>有效 benchmark</span><strong>4</strong></div>
+  <div class="card"><span>无效/未连上服务</span><strong>0</strong></div>
+  <div class="card"><span>原始总表</span><strong>86,560 行</strong></div>
+</div>
+
+<div class="note">注意：图表不会把失败的 baseline 伪装成有效数据。若 benchmark 没连上 <code>127.0.0.1:1234</code>，该组在性能图中显示为“无有效数据”。</div>
+<section class="panel wide"><h2>实验有效性</h2><ul class="status-list"><li><span class="badge ok">有效</span><b>RR no migration</b><em>成功请求 1000</em></li><li><span class="badge ok">有效</span><b>Load no migration</b><em>成功请求 1000</em></li><li><span class="badge ok">有效</span><b>Load + migration + defrag</b><em>成功请求 1000</em></li><li><span class="badge ok">有效</span><b>Llumnix sim migration</b><em>成功请求 1000</em></li></ul></section>
+<div class="grid">
+<section class="panel"><h2>成功请求数</h2><div class="ylabel">successful_responses</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#6B7280"></div></div>
+          <div class="bar-value">1000</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#2563EB"></div></div>
+          <div class="bar-value">1000</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#D97706"></div></div>
+          <div class="bar-value">1000</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#059669"></div></div>
+          <div class="bar-value">1000</div>
+        </div></div></section>
+<section class="panel"><h2>吞吐量对比</h2><div class="ylabel">tokens/s</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:90.88%; background:#6B7280"></div></div>
+          <div class="bar-value">5281.970</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#2563EB"></div></div>
+          <div class="bar-value">5811.900</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:97.04%; background:#D97706"></div></div>
+          <div class="bar-value">5639.890</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:96.85%; background:#059669"></div></div>
+          <div class="bar-value">5628.570</div>
+        </div></div></section>
+<section class="panel"><h2>QPS 对比</h2><div class="ylabel">requests/s</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:90.88%; background:#6B7280"></div></div>
+          <div class="bar-value">5.153</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#2563EB"></div></div>
+          <div class="bar-value">5.670</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:97.04%; background:#D97706"></div></div>
+          <div class="bar-value">5.503</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:96.85%; background:#059669"></div></div>
+          <div class="bar-value">5.492</div>
+        </div></div></section>
+<section class="panel"><h2>端到端延迟 P50</h2><div class="ylabel">seconds</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:97.52%; background:#6B7280"></div></div>
+          <div class="bar-value">92.419</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:80.72%; background:#2563EB"></div></div>
+          <div class="bar-value">76.499</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:92.15%; background:#D97706"></div></div>
+          <div class="bar-value">87.331</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#059669"></div></div>
+          <div class="bar-value">94.769</div>
+        </div></div></section>
+<section class="panel"><h2>端到端延迟 P95</h2><div class="ylabel">seconds</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#6B7280"></div></div>
+          <div class="bar-value">107.871</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:89.74%; background:#2563EB"></div></div>
+          <div class="bar-value">96.803</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:98.30%; background:#D97706"></div></div>
+          <div class="bar-value">106.042</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:99.86%; background:#059669"></div></div>
+          <div class="bar-value">107.716</div>
+        </div></div></section>
+<section class="panel"><h2>端到端延迟 P99</h2><div class="ylabel">seconds</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#6B7280"></div></div>
+          <div class="bar-value">113.806</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:87.68%; background:#2563EB"></div></div>
+          <div class="bar-value">99.787</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:94.46%; background:#D97706"></div></div>
+          <div class="bar-value">107.502</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:95.54%; background:#059669"></div></div>
+          <div class="bar-value">108.734</div>
+        </div></div></section>
+
+    <section class="panel wide"><h2>端到端延迟分布</h2>
+      <svg viewBox="0 0 900 300" role="img">
+        <line x1="48" y1="256" x2="882" y2="256" stroke="#9ca3af"/>
+        <line x1="48" y1="34" x2="48" y2="256" stroke="#9ca3af"/>
+        <rect x="48.0" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="77.8" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="107.6" y="254.5" width="6.1" height="1.5" fill="#6B7280" opacity="0.72"/><rect x="137.4" y="255.3" width="6.1" height="0.7" fill="#6B7280" opacity="0.72"/><rect x="167.1" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="196.9" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="226.7" y="254.5" width="6.1" height="1.5" fill="#6B7280" opacity="0.72"/><rect x="256.5" y="254.5" width="6.1" height="1.5" fill="#6B7280" opacity="0.72"/><rect x="286.3" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="316.1" y="255.3" width="6.1" height="0.7" fill="#6B7280" opacity="0.72"/><rect x="345.9" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="375.6" y="253.8" width="6.1" height="2.2" fill="#6B7280" opacity="0.72"/><rect x="405.4" y="255.3" width="6.1" height="0.7" fill="#6B7280" opacity="0.72"/><rect x="435.2" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="465.0" y="254.5" width="6.1" height="1.5" fill="#6B7280" opacity="0.72"/><rect x="494.8" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="524.6" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="554.4" y="256.0" width="6.1" height="0.0" fill="#6B7280" opacity="0.72"/><rect x="584.1" y="203.9" width="6.1" height="52.1" fill="#6B7280" opacity="0.72"/><rect x="613.9" y="162.9" width="6.1" height="93.1" fill="#6B7280" opacity="0.72"/><rect x="643.7" y="188.2" width="6.1" height="67.8" fill="#6B7280" opacity="0.72"/><rect x="673.5" y="125.6" width="6.1" height="130.4" fill="#6B7280" opacity="0.72"/><rect x="703.3" y="143.5" width="6.1" height="112.5" fill="#6B7280" opacity="0.72"/><rect x="733.1" y="176.3" width="6.1" height="79.7" fill="#6B7280" opacity="0.72"/><rect x="762.9" y="160.6" width="6.1" height="95.4" fill="#6B7280" opacity="0.72"/><rect x="792.6" y="187.5" width="6.1" height="68.5" fill="#6B7280" opacity="0.72"/><rect x="822.4" y="230.7" width="6.1" height="25.3" fill="#6B7280" opacity="0.72"/><rect x="852.2" y="246.3" width="6.1" height="9.7" fill="#6B7280" opacity="0.72"/><rect x="55.4" y="247.8" width="6.1" height="8.2" fill="#2563EB" opacity="0.72"/><rect x="85.2" y="256.0" width="6.1" height="0.0" fill="#2563EB" opacity="0.72"/><rect x="115.0" y="248.6" width="6.1" height="7.4" fill="#2563EB" opacity="0.72"/><rect x="144.8" y="234.4" width="6.1" height="21.6" fill="#2563EB" opacity="0.72"/><rect x="174.6" y="248.6" width="6.1" height="7.4" fill="#2563EB" opacity="0.72"/><rect x="204.4" y="251.5" width="6.1" height="4.5" fill="#2563EB" opacity="0.72"/><rect x="234.2" y="253.8" width="6.1" height="2.2" fill="#2563EB" opacity="0.72"/><rect x="263.9" y="245.6" width="6.1" height="10.4" fill="#2563EB" opacity="0.72"/><rect x="293.7" y="252.3" width="6.1" height="3.7" fill="#2563EB" opacity="0.72"/><rect x="323.5" y="241.8" width="6.1" height="14.2" fill="#2563EB" opacity="0.72"/><rect x="353.3" y="250.0" width="6.1" height="6.0" fill="#2563EB" opacity="0.72"/><rect x="383.1" y="247.1" width="6.1" height="8.9" fill="#2563EB" opacity="0.72"/><rect x="412.9" y="251.5" width="6.1" height="4.5" fill="#2563EB" opacity="0.72"/><rect x="442.7" y="171.8" width="6.1" height="84.2" fill="#2563EB" opacity="0.72"/><rect x="472.4" y="111.5" width="6.1" height="144.5" fill="#2563EB" opacity="0.72"/><rect x="502.2" y="237.4" width="6.1" height="18.6" fill="#2563EB" opacity="0.72"/><rect x="532.0" y="256.0" width="6.1" height="0.0" fill="#2563EB" opacity="0.72"/><rect x="561.8" y="251.5" width="6.1" height="4.5" fill="#2563EB" opacity="0.72"/><rect x="591.6" y="197.9" width="6.1" height="58.1" fill="#2563EB" opacity="0.72"/><rect x="621.4" y="200.9" width="6.1" height="55.1" fill="#2563EB" opacity="0.72"/><rect x="651.2" y="193.4" width="6.1" height="62.6" fill="#2563EB" opacity="0.72"/><rect x="680.9" y="174.8" width="6.1" height="81.2" fill="#2563EB" opacity="0.72"/><rect x="710.7" y="171.1" width="6.1" height="84.9" fill="#2563EB" opacity="0.72"/><rect x="740.5" y="209.1" width="6.1" height="46.9" fill="#2563EB" opacity="0.72"/><rect x="770.3" y="250.8" width="6.1" height="5.2" fill="#2563EB" opacity="0.72"/><rect x="800.1" y="256.0" width="6.1" height="0.0" fill="#2563EB" opacity="0.72"/><rect x="829.9" y="256.0" width="6.1" height="0.0" fill="#2563EB" opacity="0.72"/><rect x="859.7" y="256.0" width="6.1" height="0.0" fill="#2563EB" opacity="0.72"/><rect x="62.9" y="246.3" width="6.1" height="9.7" fill="#D97706" opacity="0.72"/><rect x="92.7" y="256.0" width="6.1" height="0.0" fill="#D97706" opacity="0.72"/><rect x="122.5" y="206.8" width="6.1" height="49.2" fill="#D97706" opacity="0.72"/><rect x="152.2" y="222.5" width="6.1" height="33.5" fill="#D97706" opacity="0.72"/><rect x="182.0" y="211.3" width="6.1" height="44.7" fill="#D97706" opacity="0.72"/><rect x="211.8" y="250.8" width="6.1" height="5.2" fill="#D97706" opacity="0.72"/><rect x="241.6" y="200.9" width="6.1" height="55.1" fill="#D97706" opacity="0.72"/><rect x="271.4" y="256.0" width="6.1" height="0.0" fill="#D97706" opacity="0.72"/><rect x="301.2" y="254.5" width="6.1" height="1.5" fill="#D97706" opacity="0.72"/><rect x="331.0" y="256.0" width="6.1" height="0.0" fill="#D97706" opacity="0.72"/><rect x="360.8" y="255.3" width="6.1" height="0.7" fill="#D97706" opacity="0.72"/><rect x="390.5" y="255.3" width="6.1" height="0.7" fill="#D97706" opacity="0.72"/><rect x="420.3" y="256.0" width="6.1" height="0.0" fill="#D97706" opacity="0.72"/><rect x="450.1" y="256.0" width="6.1" height="0.0" fill="#D97706" opacity="0.72"/><rect x="479.9" y="255.3" width="6.1" height="0.7" fill="#D97706" opacity="0.72"/><rect x="509.7" y="255.3" width="6.1" height="0.7" fill="#D97706" opacity="0.72"/><rect x="539.5" y="255.3" width="6.1" height="0.7" fill="#D97706" opacity="0.72"/><rect x="569.2" y="255.3" width="6.1" height="0.7" fill="#D97706" opacity="0.72"/><rect x="599.0" y="238.1" width="6.1" height="17.9" fill="#D97706" opacity="0.72"/><rect x="628.8" y="222.5" width="6.1" height="33.5" fill="#D97706" opacity="0.72"/><rect x="658.6" y="131.6" width="6.1" height="124.4" fill="#D97706" opacity="0.72"/><rect x="688.4" y="171.8" width="6.1" height="84.2" fill="#D97706" opacity="0.72"/><rect x="718.2" y="241.1" width="6.1" height="14.9" fill="#D97706" opacity="0.72"/><rect x="748.0" y="222.5" width="6.1" height="33.5" fill="#D97706" opacity="0.72"/><rect x="777.8" y="103.3" width="6.1" height="152.7" fill="#D97706" opacity="0.72"/><rect x="807.5" y="176.3" width="6.1" height="79.7" fill="#D97706" opacity="0.72"/><rect x="837.3" y="255.3" width="6.1" height="0.7" fill="#D97706" opacity="0.72"/><rect x="867.1" y="256.0" width="6.1" height="0.0" fill="#D97706" opacity="0.72"/><rect x="70.3" y="253.0" width="6.1" height="3.0" fill="#059669" opacity="0.72"/><rect x="100.1" y="255.3" width="6.1" height="0.7" fill="#059669" opacity="0.72"/><rect x="129.9" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="159.7" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="189.5" y="255.3" width="6.1" height="0.7" fill="#059669" opacity="0.72"/><rect x="219.3" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="249.1" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="278.8" y="255.3" width="6.1" height="0.7" fill="#059669" opacity="0.72"/><rect x="308.6" y="255.3" width="6.1" height="0.7" fill="#059669" opacity="0.72"/><rect x="338.4" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="368.2" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="398.0" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="427.8" y="255.3" width="6.1" height="0.7" fill="#059669" opacity="0.72"/><rect x="457.6" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="487.3" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="517.1" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="546.9" y="255.3" width="6.1" height="0.7" fill="#059669" opacity="0.72"/><rect x="576.7" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/><rect x="606.5" y="255.3" width="6.1" height="0.7" fill="#059669" opacity="0.72"/><rect x="636.3" y="241.8" width="6.1" height="14.2" fill="#059669" opacity="0.72"/><rect x="666.1" y="234.4" width="6.1" height="21.6" fill="#059669" opacity="0.72"/><rect x="695.8" y="34.0" width="6.1" height="222.0" fill="#059669" opacity="0.72"/><rect x="725.6" y="94.3" width="6.1" height="161.7" fill="#059669" opacity="0.72"/><rect x="755.4" y="198.6" width="6.1" height="57.4" fill="#059669" opacity="0.72"/><rect x="785.2" y="223.2" width="6.1" height="32.8" fill="#059669" opacity="0.72"/><rect x="815.0" y="56.3" width="6.1" height="199.7" fill="#059669" opacity="0.72"/><rect x="844.8" y="228.4" width="6.1" height="27.6" fill="#059669" opacity="0.72"/><rect x="874.6" y="256.0" width="6.1" height="0.0" fill="#059669" opacity="0.72"/>
+        <text x="48" y="286" font-size="11" fill="#6b7280">1.69s</text>
+        <text x="812" y="286" font-size="11" fill="#6b7280">116.31s</text>
+      </svg>
+      <div class="legend"><span><i style="background:#6B7280"></i>RR no migration</span><span><i style="background:#2563EB"></i>Load no migration</span><span><i style="background:#D97706"></i>Load + migration + defrag</span><span><i style="background:#059669"></i>Llumnix sim migration</span></div>
+    </section>
+<section class="panel"><h2>迁移尝试次数</h2><div class="ylabel">count</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:1.00%; background:#6B7280"></div></div>
+          <div class="bar-value">0</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:1.00%; background:#2563EB"></div></div>
+          <div class="bar-value">0</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:87.50%; background:#D97706"></div></div>
+          <div class="bar-value">7</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#059669"></div></div>
+          <div class="bar-value">8</div>
+        </div></div></section>
+<section class="panel"><h2>成功迁移次数</h2><div class="ylabel">count</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:1.00%; background:#6B7280"></div></div>
+          <div class="bar-value">0</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:1.00%; background:#2563EB"></div></div>
+          <div class="bar-value">0</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:20.00%; background:#D97706"></div></div>
+          <div class="bar-value">1</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#059669"></div></div>
+          <div class="bar-value">5</div>
+        </div></div></section>
+<section class="panel"><h2>成功迁移耗时 P50</h2><div class="ylabel">ms</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:0.00%; background:#6B7280"></div></div>
+          <div class="bar-value">无有效数据</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:0.00%; background:#2563EB"></div></div>
+          <div class="bar-value">无有效数据</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#D97706"></div></div>
+          <div class="bar-value">381.891</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:59.53%; background:#059669"></div></div>
+          <div class="bar-value">227.331</div>
+        </div></div></section>
+<section class="panel"><h2>成功迁移耗时 P95</h2><div class="ylabel">ms</div><div class="bars">
+        <div class="bar-row">
+          <div class="bar-label">RR no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:0.00%; background:#6B7280"></div></div>
+          <div class="bar-value">无有效数据</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load no migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:0.00%; background:#2563EB"></div></div>
+          <div class="bar-value">无有效数据</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Load + migration + defrag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:24.40%; background:#D97706"></div></div>
+          <div class="bar-value">381.891</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Llumnix sim migration</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100.00%; background:#059669"></div></div>
+          <div class="bar-value">1565.022</div>
+        </div></div></section>
+
+    <section class="panel wide"><h2>成功迁移耗时分布</h2>
+      <svg viewBox="0 0 900 300" role="img">
+        <line x1="48" y1="256" x2="882" y2="256" stroke="#9ca3af"/>
+        <line x1="48" y1="34" x2="48" y2="256" stroke="#9ca3af"/>
+        <rect x="48.0" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="82.8" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="117.5" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="152.2" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="187.0" y="145.0" width="14.2" height="111.0" fill="#D97706" opacity="0.72"/><rect x="221.8" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="256.5" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="291.2" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="326.0" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="360.8" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="395.5" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="430.2" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="465.0" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="499.8" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="534.5" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="569.2" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="604.0" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="638.8" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="673.5" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="708.2" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="743.0" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="777.8" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="812.5" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="847.2" y="256.0" width="14.2" height="0.0" fill="#D97706" opacity="0.72"/><rect x="65.4" y="34.0" width="14.2" height="222.0" fill="#059669" opacity="0.72"/><rect x="100.1" y="145.0" width="14.2" height="111.0" fill="#059669" opacity="0.72"/><rect x="134.9" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="169.6" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="204.4" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="239.1" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="273.9" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="308.6" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="343.4" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="378.1" y="145.0" width="14.2" height="111.0" fill="#059669" opacity="0.72"/><rect x="412.9" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="447.6" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="482.4" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="517.1" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="551.9" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="586.6" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="621.4" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="656.1" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="690.9" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="725.6" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="760.4" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="795.1" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="829.9" y="256.0" width="14.2" height="0.0" fill="#059669" opacity="0.72"/><rect x="864.6" y="145.0" width="14.2" height="111.0" fill="#059669" opacity="0.72"/>
+        <text x="48" y="286" font-size="11" fill="#6b7280">125.34ms</text>
+        <text x="812" y="286" font-size="11" fill="#6b7280">1565.02ms</text>
+      </svg>
+      <div class="legend"><span><i style="background:#D97706"></i>Load + migration + defrag</span><span><i style="background:#059669"></i>Llumnix sim migration</span></div>
+    </section>
+
+    <section class="panel wide"><h2>等待队列变化</h2><div class="ylabel">num_waiting_requests</div>
+      <svg viewBox="0 0 900 300" role="img">
+        <line x1="54" y1="34.0" x2="882" y2="34.0" stroke="#e5e7eb"/><text x="8" y="38.0" font-size="11" fill="#6b7280">37.00</text><line x1="54" y1="91.5" x2="882" y2="91.5" stroke="#e5e7eb"/><text x="8" y="95.5" font-size="11" fill="#6b7280">27.75</text><line x1="54" y1="149.0" x2="882" y2="149.0" stroke="#e5e7eb"/><text x="8" y="153.0" font-size="11" fill="#6b7280">18.50</text><line x1="54" y1="206.5" x2="882" y2="206.5" stroke="#e5e7eb"/><text x="8" y="210.5" font-size="11" fill="#6b7280">9.25</text><line x1="54" y1="264.0" x2="882" y2="264.0" stroke="#e5e7eb"/><text x="8" y="268.0" font-size="11" fill="#6b7280">0.00</text>
+        <line x1="54" y1="34" x2="54" y2="264" stroke="#9ca3af"/>
+        <line x1="54" y1="264" x2="882" y2="264" stroke="#9ca3af"/>
+        <path d="M54.0,264.0 L63.4,264.0 L72.8,264.0 L82.2,264.0 L91.6,264.0 L101.0,264.0 L110.5,264.0 L119.9,264.0 L129.3,264.0 L138.7,264.0 L148.1,264.0 L157.5,264.0 L166.9,264.0 L176.3,264.0 L185.7,264.0 L195.1,264.0 L204.5,264.0 L214.0,264.0 L223.4,264.0 L232.8,264.0 L242.2,264.0 L251.6,264.0 L261.0,264.0 L270.4,264.0 L279.8,264.0 L289.2,264.0 L298.6,264.0 L308.0,264.0 L317.5,264.0 L326.9,264.0 L336.3,264.0 L345.7,264.0 L355.1,264.0 L364.5,264.0 L373.9,264.0 L383.3,264.0 L392.7,264.0 L402.1,264.0 L411.5,264.0 L421.0,264.0 L430.4,264.0 L439.8,264.0 L449.2,264.0 L458.6,264.0 L468.0,264.0 L477.4,264.0 L486.8,264.0 L496.2,264.0 L505.6,264.0 L515.0,264.0 L524.5,264.0 L533.9,264.0 L543.3,264.0 L552.7,264.0 L562.1,264.0 L571.5,264.0 L580.9,264.0 L590.3,264.0 L599.7,264.0 L609.1,264.0 L618.5,264.0 L628.0,264.0 L637.4,264.0 L646.8,264.0 L656.2,264.0 L665.6,264.0 L675.0,264.0 L684.4,264.0 L693.8,264.0 L703.2,264.0 L712.6,264.0 L722.0,264.0 L731.5,264.0 L740.9,264.0 L750.3,264.0 L759.7,264.0 L769.1,264.0 L778.5,214.3 L787.9,264.0 L797.3,264.0 L806.7,264.0 L816.1,264.0 L825.5,264.0 L835.0,264.0 L844.4,264.0 L853.8,264.0 L863.2,264.0 L872.6,264.0 L882.0,264.0" fill="none" stroke="#6B7280" stroke-width="2" /><path d="M54.0,264.0 L64.6,264.0 L75.2,264.0 L85.8,264.0 L96.5,264.0 L107.1,264.0 L117.7,264.0 L128.3,264.0 L138.9,264.0 L149.5,264.0 L160.2,264.0 L170.8,264.0 L181.4,264.0 L192.0,264.0 L202.6,264.0 L213.2,264.0 L223.8,264.0 L234.5,264.0 L245.1,264.0 L255.7,264.0 L266.3,264.0 L276.9,264.0 L287.5,264.0 L298.2,264.0 L308.8,264.0 L319.4,264.0 L330.0,264.0 L340.6,264.0 L351.2,264.0 L361.8,264.0 L372.5,264.0 L383.1,264.0 L393.7,264.0 L404.3,264.0 L414.9,264.0 L425.5,264.0 L436.2,264.0 L446.8,264.0 L457.4,264.0 L468.0,264.0 L478.6,264.0 L489.2,264.0 L499.8,264.0 L510.5,264.0 L521.1,264.0 L531.7,264.0 L542.3,264.0 L552.9,264.0 L563.5,264.0 L574.2,264.0 L584.8,264.0 L595.4,264.0 L606.0,264.0 L616.6,264.0 L627.2,264.0 L637.8,264.0 L648.5,264.0 L659.1,170.8 L669.7,264.0 L680.3,264.0 L690.9,264.0 L701.5,264.0 L712.2,264.0 L722.8,264.0 L733.4,264.0 L744.0,96.2 L754.6,264.0 L765.2,264.0 L775.8,264.0 L786.5,264.0 L797.1,264.0 L807.7,264.0 L818.3,264.0 L828.9,264.0 L839.5,264.0 L850.2,264.0 L860.8,264.0 L871.4,264.0 L882.0,264.0" fill="none" stroke="#2563EB" stroke-width="2" /><path d="M54.0,264.0 L68.8,264.0 L83.6,264.0 L98.4,264.0 L113.1,264.0 L127.9,264.0 L142.7,264.0 L157.5,264.0 L172.3,264.0 L187.1,264.0 L201.9,264.0 L216.6,264.0 L231.4,264.0 L246.2,264.0 L261.0,264.0 L275.8,264.0 L290.6,264.0 L305.4,264.0 L320.1,264.0 L334.9,264.0 L349.7,264.0 L364.5,264.0 L379.3,257.8 L394.1,264.0 L408.9,264.0 L423.6,264.0 L438.4,264.0 L453.2,264.0 L468.0,264.0 L482.8,264.0 L497.6,264.0 L512.4,264.0 L527.1,264.0 L541.9,264.0 L556.7,264.0 L571.5,264.0 L586.3,264.0 L601.1,201.8 L615.9,264.0 L630.6,264.0 L645.4,264.0 L660.2,264.0 L675.0,264.0 L689.8,264.0 L704.6,264.0 L719.4,264.0 L734.1,264.0 L748.9,264.0 L763.7,34.0 L778.5,264.0 L793.3,264.0 L808.1,264.0 L822.9,264.0 L837.6,264.0 L852.4,264.0 L867.2,264.0 L882.0,264.0" fill="none" stroke="#D97706" stroke-width="2" /><path d="M54.0,264.0 L75.2,264.0 L96.5,145.9 L117.7,226.7 L138.9,264.0 L160.2,257.8 L181.4,264.0 L202.6,264.0 L223.8,264.0 L245.1,264.0 L266.3,264.0 L287.5,264.0 L308.8,264.0 L330.0,264.0 L351.2,264.0 L372.5,264.0 L393.7,264.0 L414.9,264.0 L436.2,264.0 L457.4,264.0 L478.6,264.0 L499.8,264.0 L521.1,264.0 L542.3,264.0 L563.5,177.0 L584.8,264.0 L606.0,264.0 L627.2,264.0 L648.5,264.0 L669.7,264.0 L690.9,264.0 L712.2,264.0 L733.4,264.0 L754.6,264.0 L775.8,264.0 L797.1,264.0 L818.3,264.0 L839.5,264.0 L860.8,152.1 L882.0,264.0" fill="none" stroke="#059669" stroke-width="2" />
+      </svg>
+      <div class="legend"><span><i style="background:#6B7280"></i>RR no migration</span><span><i style="background:#2563EB"></i>Load no migration</span><span><i style="background:#D97706"></i>Load + migration + defrag</span><span><i style="background:#059669"></i>Llumnix sim migration</span></div>
+    </section>
+
+    <section class="panel wide"><h2>GPU cache usage 变化</h2><div class="ylabel">gpu_cache_usage</div>
+      <svg viewBox="0 0 900 300" role="img">
+        <line x1="54" y1="34.0" x2="882" y2="34.0" stroke="#e5e7eb"/><text x="8" y="38.0" font-size="11" fill="#6b7280">0.56</text><line x1="54" y1="91.5" x2="882" y2="91.5" stroke="#e5e7eb"/><text x="8" y="95.5" font-size="11" fill="#6b7280">0.42</text><line x1="54" y1="149.0" x2="882" y2="149.0" stroke="#e5e7eb"/><text x="8" y="153.0" font-size="11" fill="#6b7280">0.28</text><line x1="54" y1="206.5" x2="882" y2="206.5" stroke="#e5e7eb"/><text x="8" y="210.5" font-size="11" fill="#6b7280">0.14</text><line x1="54" y1="264.0" x2="882" y2="264.0" stroke="#e5e7eb"/><text x="8" y="268.0" font-size="11" fill="#6b7280">0.00</text>
+        <line x1="54" y1="34" x2="54" y2="264" stroke="#9ca3af"/>
+        <line x1="54" y1="264" x2="882" y2="264" stroke="#9ca3af"/>
+        <path d="M54.0,264.0 L63.4,264.0 L72.8,254.8 L82.2,253.8 L91.6,264.0 L101.0,245.1 L110.5,264.0 L119.9,264.0 L129.3,258.2 L138.7,247.6 L148.1,264.0 L157.5,257.8 L166.9,246.0 L176.3,240.6 L185.7,264.0 L195.1,264.0 L204.5,247.0 L214.0,257.2 L223.4,264.0 L232.8,264.0 L242.2,251.8 L251.6,264.0 L261.0,257.8 L270.4,257.0 L279.8,264.0 L289.2,264.0 L298.6,261.3 L308.0,257.5 L317.5,239.4 L326.9,260.2 L336.3,249.0 L345.7,264.0 L355.1,264.0 L364.5,253.6 L373.9,264.0 L383.3,252.0 L392.7,261.1 L402.1,260.1 L411.5,256.4 L421.0,257.9 L430.4,256.2 L439.8,264.0 L449.2,264.0 L458.6,255.8 L468.0,264.0 L477.4,245.2 L486.8,236.6 L496.2,264.0 L505.6,235.3 L515.0,264.0 L524.5,236.1 L533.9,245.4 L543.3,264.0 L552.7,252.7 L562.1,255.7 L571.5,264.0 L580.9,264.0 L590.3,253.4 L599.7,254.7 L609.1,251.2 L618.5,264.0 L628.0,264.0 L637.4,255.1 L646.8,255.8 L656.2,264.0 L665.6,264.0 L675.0,253.8 L684.4,264.0 L693.8,253.5 L703.2,235.8 L712.6,264.0 L722.0,240.1 L731.5,235.7 L740.9,264.0 L750.3,261.8 L759.7,264.0 L769.1,255.8 L778.5,228.1 L787.9,264.0 L797.3,245.1 L806.7,255.0 L816.1,260.0 L825.5,228.5 L835.0,264.0 L844.4,259.7 L853.8,264.0 L863.2,255.6 L872.6,214.9 L882.0,264.0" fill="none" stroke="#6B7280" stroke-width="2" /><path d="M54.0,264.0 L64.6,264.0 L75.2,249.2 L85.8,257.9 L96.5,264.0 L107.1,261.2 L117.7,264.0 L128.3,257.4 L138.9,264.0 L149.5,251.5 L160.2,257.5 L170.8,264.0 L181.4,257.5 L192.0,264.0 L202.6,255.2 L213.2,264.0 L223.8,258.5 L234.5,255.7 L245.1,258.0 L255.7,264.0 L266.3,264.0 L276.9,219.8 L287.5,221.1 L298.2,228.8 L308.8,241.2 L319.4,204.6 L330.0,264.0 L340.6,264.0 L351.2,260.7 L361.8,264.0 L372.5,261.9 L383.1,255.7 L393.7,264.0 L404.3,264.0 L414.9,257.4 L425.5,264.0 L436.2,243.7 L446.8,264.0 L457.4,253.8 L468.0,256.8 L478.6,264.0 L489.2,136.5 L499.8,98.2 L510.5,260.4 L521.1,190.7 L531.7,252.3 L542.3,264.0 L552.9,212.9 L563.5,251.7 L574.2,226.0 L584.8,264.0 L595.4,251.2 L606.0,264.0 L616.6,253.6 L627.2,253.3 L637.8,256.9 L648.5,264.0 L659.1,214.9 L669.7,264.0 L680.3,260.7 L690.9,248.0 L701.5,264.0 L712.2,257.2 L722.8,264.0 L733.4,218.6 L744.0,169.4 L754.6,34.0 L765.2,63.0 L775.8,140.5 L786.5,264.0 L797.1,260.2 L807.7,257.9 L818.3,264.0 L828.9,258.3 L839.5,222.9 L850.2,264.0 L860.8,244.0 L871.4,257.8 L882.0,264.0" fill="none" stroke="#2563EB" stroke-width="2" /><path d="M54.0,264.0 L68.8,264.0 L83.6,254.9 L98.4,229.3 L113.1,264.0 L127.9,262.0 L142.7,264.0 L157.5,256.7 L172.3,260.9 L187.1,264.0 L201.9,251.9 L216.6,262.1 L231.4,264.0 L246.2,261.3 L261.0,264.0 L275.8,247.7 L290.6,199.6 L305.4,252.5 L320.1,195.3 L334.9,264.0 L349.7,260.5 L364.5,264.0 L379.3,241.1 L394.1,251.0 L408.9,264.0 L423.6,248.7 L438.4,264.0 L453.2,262.3 L468.0,264.0 L482.8,260.1 L497.6,264.0 L512.4,240.5 L527.1,264.0 L541.9,258.6 L556.7,264.0 L571.5,259.9 L586.3,264.0 L601.1,241.1 L615.9,245.8 L630.6,264.0 L645.4,258.4 L660.2,264.0 L675.0,251.3 L689.8,255.3 L704.6,264.0 L719.4,256.4 L734.1,264.0 L748.9,249.4 L763.7,241.5 L778.5,264.0 L793.3,256.4 L808.1,261.4 L822.9,247.1 L837.6,259.8 L852.4,246.8 L867.2,264.0 L882.0,264.0" fill="none" stroke="#D97706" stroke-width="2" /><path d="M54.0,264.0 L75.2,264.0 L96.5,243.7 L117.7,241.1 L138.9,262.5 L160.2,179.7 L181.4,260.6 L202.6,264.0 L223.8,264.0 L245.1,247.3 L266.3,141.7 L287.5,260.9 L308.8,261.9 L330.0,226.7 L351.2,264.0 L372.5,194.6 L393.7,180.1 L414.9,262.0 L436.2,261.0 L457.4,264.0 L478.6,264.0 L499.8,240.3 L521.1,239.2 L542.3,256.7 L563.5,206.9 L584.8,264.0 L606.0,190.9 L627.2,164.2 L648.5,264.0 L669.7,261.0 L690.9,239.6 L712.2,264.0 L733.4,261.1 L754.6,264.0 L775.8,260.7 L797.1,264.0 L818.3,109.0 L839.5,258.1 L860.8,242.3 L882.0,264.0" fill="none" stroke="#059669" stroke-width="2" />
+      </svg>
+      <div class="legend"><span><i style="background:#6B7280"></i>RR no migration</span><span><i style="background:#2563EB"></i>Load no migration</span><span><i style="background:#D97706"></i>Load + migration + defrag</span><span><i style="background:#059669"></i>Llumnix sim migration</span></div>
+    </section>
+<section class="panel wide"><h2>关键指标表</h2><div class="table-wrap"><table><thead><tr><th>实验组</th><th>benchmark有效</th><th>成功请求</th><th>tokens/s</th><th>QPS</th><th>E2E P50(s)</th><th>E2E P95(s)</th><th>E2E P99(s)</th><th>迁移尝试</th><th>迁移成功</th><th>迁移P50(ms)</th><th>迁移P95(ms)</th><th>实例采样行</th><th>错误</th></tr></thead><tbody><tr><td>RR no migration</td><td>True</td><td>1000</td><td>5281.970</td><td>5.153</td><td>92.419</td><td>107.871</td><td>113.806</td><td>0</td><td>0</td><td></td><td></td><td>89</td><td></td></tr><tr><td>Load no migration</td><td>True</td><td>1000</td><td>5811.900</td><td>5.670</td><td>76.499</td><td>96.803</td><td>99.787</td><td>0</td><td>0</td><td></td><td></td><td>79</td><td></td></tr><tr><td>Load + migration + defrag</td><td>True</td><td>1000</td><td>5639.890</td><td>5.503</td><td>87.331</td><td>106.042</td><td>107.502</td><td>7</td><td>1</td><td>381.891</td><td>381.891</td><td>57</td><td></td></tr><tr><td>Llumnix sim migration</td><td>True</td><td>1000</td><td>5628.570</td><td>5.492</td><td>94.769</td><td>107.716</td><td>108.734</td><td>8</td><td>5</td><td>227.331</td><td>1565.022</td><td>40</td><td></td></tr></tbody></table></div></section>
+</div>
+</main>
+<footer>生成文件：<code>D:\llumnix-ray-main\llumnix_experiment_visual_report.html</code>；指标 CSV：<code>D:\llumnix-ray-main\llumnix_experiment_metrics.csv</code>。</footer>
+</body>
+</html>

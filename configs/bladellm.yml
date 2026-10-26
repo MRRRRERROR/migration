@@ -1,0 +1,26 @@
+# The field, once set to True in the config file, cannot be set to False via command-line arguments.
+
+SERVER:
+  HOST: '127.0.0.1'
+  PORT: 1234
+  REQUEST_OUTPUT_QUEUE_TYPE: "zmq"
+  RAY_CLUSTER_PORT: 6379
+  LAUNCH_RAY_CLUSTER: False
+
+MANAGER:
+  ENABLE_ROUTINE_MIGRATION: False
+  MIGRATE_OUT_THRESHOLD: -3.0
+  DISPATCH_POLICY: 'load'
+  PAIR_MIGRATION_POLICY: 'defrag'
+
+INSTANCE:
+  DISPATCH_LOAD_METRIC: 'remaining_steps'
+  MIGRATION_LOAD_METRIC: "remaining_steps"
+
+  ENABLE_DEFRAG: True
+  REQUEST_MIGRATION_POLICY: 'SR'
+
+  MIGRATION_BACKEND: 'grpc'
+  MIGRATION_BUFFER_BLOCKS: 512
+  KVTRANSFER_MIGRATION_BACKEND_TRANSFER_TYPE: 'rdma'
+  KVTRANSFER_MIGRATION_BACKEND_NAMING_URL: "file:/tmp/llumnix/naming/"

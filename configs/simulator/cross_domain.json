@@ -1,0 +1,20 @@
+{
+  "description": "Illustrative two-domain CPU simulation; parameters are assumptions, not 5090 calibration.",
+  "kv_bytes_per_token": 57344,
+  "output_wire_bytes_per_token": 64,
+  "instances": [
+    {"id": "source", "domain": "domain_a", "kv_blocks": 4096, "max_batch_tokens": 256},
+    {"id": "target", "domain": "domain_b", "kv_blocks": 4096, "max_batch_tokens": 256}
+  ],
+  "links": [
+    {"source": "domain_a", "target": "domain_b", "bandwidth_bytes_per_ms": 125000, "latency_ms": 10},
+    {"source": "domain_b", "target": "domain_a", "bandwidth_bytes_per_ms": 125000, "latency_ms": 10}
+  ],
+  "requests": [
+    {"request_id": "migrating", "instance": "source", "prompt_length": 512, "max_tokens": 128},
+    {"request_id": "target_background", "instance": "target", "prompt_length": 256, "max_tokens": 128}
+  ],
+  "migrations": [
+    {"request_id": "migrating", "target": "target", "at_ms": 80, "mode": "token_live", "max_rounds": 3, "final_gap_tokens": 0}
+  ]
+}

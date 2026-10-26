@@ -1,0 +1,19 @@
+{
+  "workload_type": "stable_short",
+  "experiment_group": "Hybrid_no_migration",
+  "repeat_id": 2,
+  "request_num": 500,
+  "concurrency": 50,
+  "instance_num": 4,
+  "status": "failed_oom",
+  "fairness_status": "contended",
+  "gpu_contention": true,
+  "usable_for_final_fair_performance_comparison": false,
+  "note": "GPU shared with other user tasks; not for final fair performance comparison",
+  "nvidia_smi_before": "unavailable because the runner was externally terminated before writing its in-memory snapshot",
+  "nvidia_smi_after": "nvidia_smi_after.txt",
+  "non_experiment_gpu_process_count": "unavailable",
+  "first_fatal": "EngineCore failed to start: free GPU memory was below the requested 0.5 utilization; GPU 2 reported CUDA out of memory",
+  "evidence": "logs/vllm_0.log through logs/vllm_3.log",
+  "archived": true
+}
