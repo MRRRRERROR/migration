@@ -1,0 +1,6 @@
+{
+  "requests": 27606,
+  "completed_missing": 0,
+  "basis": "nonempty per-instance EngineCore emitted-token events; original queue presence is not execution",
+  "token_event_counts_are_not_transfer_bytes": true
+}

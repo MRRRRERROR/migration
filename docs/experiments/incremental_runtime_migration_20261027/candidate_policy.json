@@ -1,0 +1,1 @@
+{"period_s": 1.0, "state_max_age_s": 2.0, "waiting_load_gap": 2, "running_gap": 3, "persistent_checks": 3, "cooldown_s": 10.0, "request_cooldown_s": 60.0, "max_destination_kv_fraction": 0.85, "decode_margin_tokens": 512, "max_migration_context": 4096, "session_timeout_s": 60.0}

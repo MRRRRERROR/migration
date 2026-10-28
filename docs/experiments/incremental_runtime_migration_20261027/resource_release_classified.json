@@ -1,0 +1,248 @@
+{
+  "wall_ns": 1793127142060649088,
+  "monotonic_s": 1524421.844636753,
+  "root": "/data/home/zylu/llumnix-v018-main/results/incremental_runtime_migration_20261027_01",
+  "verified_identities": [],
+  "processes": [
+    {
+      "label": "redis",
+      "pid": 336906,
+      "created": 1793092848.62,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "label": "vllm_S",
+      "pid": 336913,
+      "created": 1793092849.13,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "label": "vllm_D",
+      "pid": 336914,
+      "created": 1793092849.13,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "label": "nvml",
+      "pid": 345955,
+      "created": 1793093436.84,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 470406,
+      "created": 1793101722.26,
+      "label": "controller",
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 337349,
+      "created": 1793092861.97,
+      "label": "model_child",
+      "verified_parent": 336913,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 337350,
+      "created": 1793092861.98,
+      "label": "model_child",
+      "verified_parent": 336913,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 338637,
+      "created": 1793092908.98,
+      "label": "model_child",
+      "verified_parent": 336913,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 337217,
+      "created": 1793092860.51,
+      "label": "model_child",
+      "verified_parent": 336914,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 337218,
+      "created": 1793092860.51,
+      "label": "model_child",
+      "verified_parent": 336914,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 338636,
+      "created": 1793092908.98,
+      "label": "model_child",
+      "verified_parent": 336914,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 349780,
+      "created": 1793093674.04,
+      "label": "prometheus",
+      "exists": false,
+      "identity_matches": false
+    }
+  ],
+  "owned_residual_pids": [],
+  "model_residual_pids": [],
+  "compute_query_returncode": 0,
+  "compute_query_stderr": "",
+  "selected_gpu_compute_apps": [],
+  "verified_owned_gpu_apps": [],
+  "gpu_released": true,
+  "auxiliary_released": true,
+  "selected_devices": [
+    "0, GPU-0fc3a8e6-93f3-9c89-f694-bf490b219907, 2, 0, 11.15",
+    "1, GPU-9ce9c226-678f-8cb4-4cf6-47c18d5b638a, 2, 0, 10.48"
+  ],
+  "listening_experiment_ports": [],
+  "last_engine_states": {
+    "S": {
+      "pid": 337350,
+      "wall_ns": 1793127091967836374,
+      "monotonic_s": 1524371.751818192,
+      "mode": "C",
+      "running": 0,
+      "waiting": 0,
+      "holds": [],
+      "migration_tasks": 0,
+      "migration_finish": true,
+      "request_ids": []
+    },
+    "D": {
+      "pid": 337218,
+      "wall_ns": 1793127085833585105,
+      "monotonic_s": 1524365.617568363,
+      "mode": "C",
+      "running": 0,
+      "waiting": 0,
+      "holds": [],
+      "migration_tasks": 0,
+      "migration_finish": true,
+      "request_ids": []
+    }
+  },
+  "note": "No signals sent. New unrelated processes on released devices/ports are not owned and must not be stopped.",
+  "exit_evidence_classification": "post_measurement_native_shutdown_failure_D_asio_segfault_S_heap_corruption",
+  "shutdown_checker_error_scope": "after_all_30_measurements_in_cleanup_gpu_check",
+  "post_shutdown_samples": [
+    {
+      "wall_ns": 1793127271767803097,
+      "returncode": 0,
+      "rows": [
+        "0, GPU-0fc3a8e6-93f3-9c89-f694-bf490b219907, 2, 0, 9.79",
+        "1, GPU-9ce9c226-678f-8cb4-4cf6-47c18d5b638a, 2, 0, 7.74"
+      ]
+    },
+    {
+      "wall_ns": 1793127272876787880,
+      "returncode": 0,
+      "rows": [
+        "0, GPU-0fc3a8e6-93f3-9c89-f694-bf490b219907, 2, 0, 9.85",
+        "1, GPU-9ce9c226-678f-8cb4-4cf6-47c18d5b638a, 2, 0, 7.65"
+      ]
+    },
+    {
+      "wall_ns": 1793127273985481889,
+      "returncode": 0,
+      "rows": [
+        "0, GPU-0fc3a8e6-93f3-9c89-f694-bf490b219907, 2, 0, 9.84",
+        "1, GPU-9ce9c226-678f-8cb4-4cf6-47c18d5b638a, 2, 0, 7.61"
+      ]
+    }
+  ],
+  "owned_zombie_pids": [],
+  "initial_post_shutdown_checker_reading_preserved_in": "paired_abc_01/run_failure.json",
+  "native_shutdown_failures": [
+    {
+      "role": "S",
+      "original": "/data/home/zylu/llumnix-v018-main/results/incremental_runtime_migration_20261027_01/services_01/vllm_S.log",
+      "tail": "/data/home/zylu/llumnix-v018-main/results/incremental_runtime_migration_20261027_01/audit/vllm_S_shutdown_tail_01.log",
+      "byte_offset": 395076187,
+      "bytes": 160000,
+      "failure_lines": [
+        "corrupted double-linked list"
+      ],
+      "lifecycle_excerpt": [
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105108061 wall_ns=1793127092321121572 object=0x5eb83357fa70 pool=0x5eb832593c70 buf=0x78a19872d000 base=0x78a19872d000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105114893 wall_ns=1793127092321128405 object=0x5eb83357fb10 pool=0x5eb832593c70 buf=0x78a15a000000 base=0x78a15a000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105121648 wall_ns=1793127092321135160 object=0x5eb83357fbb0 pool=0x5eb832593c70 buf=0x78a150000000 base=0x78a150000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105144263 wall_ns=1793127092321157776 object=0x5eb83357fc50 pool=0x5eb832593c70 buf=0x78a146000000 base=0x78a146000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105151235 wall_ns=1793127092321164748 object=0x5eb8335835f0 pool=0x5eb832593c70 buf=0x78a13c000000 base=0x78a13c000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105158104 wall_ns=1793127092321171615 object=0x5eb833583690 pool=0x5eb832593c70 buf=0x78a132000000 base=0x78a132000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105165762 wall_ns=1793127092321179274 object=0x5eb833583730 pool=0x5eb832593c70 buf=0x78a128000000 base=0x78a128000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105172852 wall_ns=1793127092321186364 object=0x5eb8335837d0 pool=0x5eb832593c70 buf=0x78a11e000000 base=0x78a11e000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105179662 wall_ns=1793127092321193175 object=0x5eb833583870 pool=0x5eb832593c70 buf=0x78a114000000 base=0x78a114000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105186415 wall_ns=1793127092321199927 object=0x5eb833583910 pool=0x5eb832593c70 buf=0x78a10a000000 base=0x78a10a000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105193392 wall_ns=1793127092321206905 object=0x5eb8335839b0 pool=0x5eb832593c70 buf=0x78a100000000 base=0x78a100000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105200104 wall_ns=1793127092321213617 object=0x5eb833583a50 pool=0x5eb832593c70 buf=0x78a0f6000000 base=0x78a0f6000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105206924 wall_ns=1793127092321220436 object=0x5eb833583af0 pool=0x5eb832593c70 buf=0x78a0ec000000 base=0x78a0ec000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105216033 wall_ns=1793127092321229546 object=0x5eb833583b90 pool=0x5eb832593c70 buf=0x78a0e2000000 base=0x78a0e2000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105222977 wall_ns=1793127092321236489 object=0x5eb833583c30 pool=0x5eb832593c70 buf=0x78a0d8000000 base=0x78a0d8000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105229765 wall_ns=1793127092321243277 object=0x5eb833583cd0 pool=0x5eb832593c70 buf=0x78a0ce000000 base=0x78a0ce000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105236636 wall_ns=1793127092321250149 object=0x5eb833583d70 pool=0x5eb832593c70 buf=0x78a0c4000000 base=0x78a0c4000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105243370 wall_ns=1793127092321256883 object=0x5eb833583e10 pool=0x5eb832593c70 buf=0x78a0ba000000 base=0x78a0ba000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105250059 wall_ns=1793127092321263571 object=0x5eb833583eb0 pool=0x5eb832593c70 buf=0x78a0b0000000 base=0x78a0b0000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105256870 wall_ns=1793127092321270382 object=0x5eb833583f50 pool=0x5eb832593c70 buf=0x78a0a6000000 base=0x78a0a6000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105267573 wall_ns=1793127092321281086 object=0x5eb833581430 pool=0x5eb832593c70 buf=0x78a09c000000 base=0x78a09c000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105274746 wall_ns=1793127092321288259 object=0x5eb8335814d0 pool=0x5eb832593c70 buf=0x78a092000000 base=0x78a092000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105281921 wall_ns=1793127092321295433 object=0x5eb833581570 pool=0x5eb832593c70 buf=0x78a088000000 base=0x78a088000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337350 tid=337350 mono_ns=1524372105290486 wall_ns=1793127092321303998 object=0x5eb833581610 pool=0x5eb832593c70 buf=0x78a07e000000 base=0x78a07e000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5eb81fcce310 primary_query_rc=0 primary_active=1"
+      ]
+    },
+    {
+      "role": "D",
+      "original": "/data/home/zylu/llumnix-v018-main/results/incremental_runtime_migration_20261027_01/services_01/vllm_D.log",
+      "tail": "/data/home/zylu/llumnix-v018-main/results/incremental_runtime_migration_20261027_01/audit/vllm_D_shutdown_tail_01.log",
+      "byte_offset": 397013475,
+      "bytes": 160000,
+      "failure_lines": [
+        "!!!!!!! Segfault encountered !!!!!!!"
+      ],
+      "lifecycle_excerpt": [
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214544676 wall_ns=1793127086430558189 object=0x5babd881db10 pool=0x5babc8022ae0 buf=0x7d076472d000 base=0x7d076472d000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214551612 wall_ns=1793127086430565124 object=0x5babd881dbb0 pool=0x5babc8022ae0 buf=0x7d0726000000 base=0x7d0726000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214558421 wall_ns=1793127086430571934 object=0x5babd881dc50 pool=0x5babc8022ae0 buf=0x7d071c000000 base=0x7d071c000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214565208 wall_ns=1793127086430578721 object=0x5babd88215f0 pool=0x5babc8022ae0 buf=0x7d0712000000 base=0x7d0712000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214571896 wall_ns=1793127086430585409 object=0x5babd8821690 pool=0x5babc8022ae0 buf=0x7d0708000000 base=0x7d0708000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214579032 wall_ns=1793127086430592544 object=0x5babd8821730 pool=0x5babc8022ae0 buf=0x7d06fe000000 base=0x7d06fe000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214585804 wall_ns=1793127086430599316 object=0x5babd88217d0 pool=0x5babc8022ae0 buf=0x7d06f4000000 base=0x7d06f4000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214592500 wall_ns=1793127086430606011 object=0x5babd8821870 pool=0x5babc8022ae0 buf=0x7d06ea000000 base=0x7d06ea000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214599223 wall_ns=1793127086430612736 object=0x5babd8821910 pool=0x5babc8022ae0 buf=0x7d06e0000000 base=0x7d06e0000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214608583 wall_ns=1793127086430622096 object=0x5babd88219b0 pool=0x5babc8022ae0 buf=0x7d06d6000000 base=0x7d06d6000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214615510 wall_ns=1793127086430629022 object=0x5babd8821a50 pool=0x5babc8022ae0 buf=0x7d06cc000000 base=0x7d06cc000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214622193 wall_ns=1793127086430635705 object=0x5babd8821af0 pool=0x5babc8022ae0 buf=0x7d06c2000000 base=0x7d06c2000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214628933 wall_ns=1793127086430642446 object=0x5babd8821b90 pool=0x5babc8022ae0 buf=0x7d06b8000000 base=0x7d06b8000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214635633 wall_ns=1793127086430649145 object=0x5babd8821c30 pool=0x5babc8022ae0 buf=0x7d06ae000000 base=0x7d06ae000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214642353 wall_ns=1793127086430655865 object=0x5babd8821cd0 pool=0x5babc8022ae0 buf=0x7d06a4000000 base=0x7d06a4000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214649076 wall_ns=1793127086430662588 object=0x5babd8821d70 pool=0x5babc8022ae0 buf=0x7d069a000000 base=0x7d069a000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214655864 wall_ns=1793127086430669375 object=0x5babd8821e10 pool=0x5babc8022ae0 buf=0x7d0690000000 base=0x7d0690000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214662615 wall_ns=1793127086430676127 object=0x5babd8821eb0 pool=0x5babc8022ae0 buf=0x7d0686000000 base=0x7d0686000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214669370 wall_ns=1793127086430682882 object=0x5babd8821f50 pool=0x5babc8022ae0 buf=0x7d067c000000 base=0x7d067c000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214681944 wall_ns=1793127086430695456 object=0x5babd881f430 pool=0x5babc8022ae0 buf=0x7d0672000000 base=0x7d0672000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214689218 wall_ns=1793127086430702731 object=0x5babd881f4d0 pool=0x5babc8022ae0 buf=0x7d0668000000 base=0x7d0668000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214696449 wall_ns=1793127086430709962 object=0x5babd881f570 pool=0x5babc8022ae0 buf=0x7d065e000000 base=0x7d065e000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214703267 wall_ns=1793127086430716780 object=0x5babd881f610 pool=0x5babc8022ae0 buf=0x7d0654000000 base=0x7d0654000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1",
+        "KVT_SHUTDOWN event=borrowed_tensor_view_end pid=337218 tid=337218 mono_ns=1524366214712163 wall_ns=1793127086430725675 object=0x5babd881f6b0 pool=0x5babc8022ae0 buf=0x7d064a000000 base=0x7d064a000000 len=153387008 dtype=1 device=0 native_mr=(nil) released_flag=(nil) allocator=(nil) adopted=0 operation=owner=PyTorch;NoBarexRelease result=0 cuda_query_rc=0 cuda_context=0x5babc4f41970 primary_query_rc=0 primary_active=1"
+      ]
+    }
+  ],
+  "last_measurement_client_finish": {
+    "round": "formal_high_s8105_C",
+    "last_client_finish_monotonic_s": 1524363.282371796,
+    "last_client_finish_wall_ns": 1793127083498388493
+  },
+  "normal_unload_qualified": false
+}

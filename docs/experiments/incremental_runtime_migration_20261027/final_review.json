@@ -1,0 +1,53 @@
+{
+  "formal_rounds": 30,
+  "requests": 22953,
+  "completed": 22953,
+  "failed": 0,
+  "unfinished": 0,
+  "service_valid_rounds": 30,
+  "selected_running_sessions": 39,
+  "running_terminals": {
+    "completed": 37,
+    "not_dispatched": 1,
+    "cancelled": 1
+  },
+  "native_initiated_formal": 38,
+  "waiting_events": {
+    "begin": 17,
+    "atomic_claim_rejected": 17
+  },
+  "waiting_rejection_proofs": 17,
+  "waiting_rejected_already_running": 17,
+  "completed_output_comparisons": 18404,
+  "output_mismatches": 0,
+  "usage_count_mismatches": 0,
+  "output_hash_mismatches": 0,
+  "send_lag_max_s": 0.3775489721933809,
+  "prometheus_errors_inside_closed_rounds": 0,
+  "bracketing_preemption_counter_changes": [
+    "0.0"
+  ],
+  "native_audit": {
+    "closed_rounds": 36,
+    "frozen_files_checked": 20,
+    "frozen_code_mismatches": 0,
+    "native_initiation_mismatches": 0,
+    "unexplained_native_session_accounting": 0,
+    "unbalanced_terminals": 0,
+    "foreign_gpu_samples": 0,
+    "completed_missing_acquire_evidence": 0,
+    "duplicate_lease_events": 0,
+    "malformed_records": 0,
+    "native_file_available": true,
+    "power_file_available": true,
+    "evidence_limit": "NVML polling may miss activity between samples; absence of recorded foreign use is not continuous proof. Native counts retain event semantics; request_finished events are not logical user failures."
+  },
+  "execution_coverage": {
+    "requests": 27606,
+    "completed_missing": 0,
+    "basis": "nonempty per-instance EngineCore emitted-token events; original queue presence is not execution",
+    "token_event_counts_are_not_transfer_bytes": true
+  },
+  "finish_length_formal": 207,
+  "note": "Derived audit. Original progress, validity, failures and all raw logs preserved. Normal native unload failed; GPU resources released independently."
+}

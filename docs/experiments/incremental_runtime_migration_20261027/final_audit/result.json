@@ -1,0 +1,15 @@
+{
+  "closed_rounds": 36,
+  "frozen_files_checked": 20,
+  "frozen_code_mismatches": 0,
+  "native_initiation_mismatches": 0,
+  "unexplained_native_session_accounting": 0,
+  "unbalanced_terminals": 0,
+  "foreign_gpu_samples": 0,
+  "completed_missing_acquire_evidence": 0,
+  "duplicate_lease_events": 0,
+  "malformed_records": 0,
+  "native_file_available": true,
+  "power_file_available": true,
+  "evidence_limit": "NVML polling may miss activity between samples; absence of recorded foreign use is not continuous proof. Native counts retain event semantics; request_finished events are not logical user failures."
+}

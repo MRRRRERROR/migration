@@ -1,0 +1,17 @@
+# 退出故障：资源已释放，正常卸载仍未通过
+
+本轮最后一个客户端请求完成于2026-10-28 02:51:23.498（由同机单调时钟与本轮起点壁钟对齐）。所有30轮22953个请求已完成后，原控制器按原项目入口依次SIGTERM停止实例；没有新增退出复现实验，也没有使用SIGKILL。
+
+目标D/Core337218的日志在02:51:26.455的BarexChannel close之后打印segfault。栈位于pthread_mutex_lock → Boost.Asio service_registry::create/do_use_service → reactive_socket_service::async_accept → XContextTcpImpl::doAccept回调 → io_loop_func_server_。源S/Core337350在最后一批borrowed_tensor_view_end日志之后提示`corrupted double-linked list`。这两项是真实的native退出故障，不能用进程消失、请求全部完成或GPU空闲代替正常卸载验收。
+
+原始日志保存在完整快照services_01/vllm_S.log、vllm_D.log；audit/vllm_S_shutdown_tail_01.log、vllm_D_shutdown_tail_01.log记录末段原文及原文件字节偏移，audit/exit_failure_evidence_01.json记录与最后客户端完成时间的对应关系。没有修改原日志、删除断言、忽略native返回值或改写原始退出记录。
+
+上述栈不等于已找到最先失效的对象。现有证据不足以断言重复释放、某线程未join、某个Asio对象先析构，或CUDA上下文先销毁。末段借用Tensor视图日志显示owner=PyTorch、native_mr为空、NoBarexRelease，且CUDA查询当时成功；这只说明该条清理路径的观测状态，不能推导整个SDK没有其他生命周期错误。两个已记录的channel地址不同，不能因为有两条close就认定同一channel被重复释放。
+
+严格定位仍需把对象归属、accept取消、回调结束、通信线程停止/join和Asio服务析构的事件逐一对应。项目根没有新core文件；内核core_pattern指向Apport，另行清点本用户的新崩溃报告。现有GDB与其他历史证据保留，不为获取新证据重新占GPU或更改SDK私有内存布局。
+
+资源复核与native正常退出是两件事：创建时间及父子关系核验后的全部自有进程均消失，自有端口无监听，两张卡无compute进程，三次独立采样显存均2MiB、利用率均0。资源已经释放，CPU报告工作不需要模型驻留。
+
+原控制器的run_failure发生在所有测量闭合后的cleanup.gpu_check：首次退出后读数无compute PID、显存约1MiB，但利用率为100，触发复用的空闲门。该检查时机/瞬态读数问题与上述native故障分别保留，不用任何一项掩盖另一项；不修改原始blocked、validity和shutdown记录。模型附着于非父进程，退出码unavailable_non_child不是0，也不是segfault返回码的证据。
+
+服务期对照数据可以描述本版本下的客户端观测，但不能由此宣称SDK正常卸载已修复或平台具备生产可靠性。后续SDK修复需独立取证与正常退出验收，不在本轮自动追加GPU实验。

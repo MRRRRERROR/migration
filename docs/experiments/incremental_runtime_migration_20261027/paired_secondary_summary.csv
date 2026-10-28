@@ -1,0 +1,17 @@
+﻿load,metric,contrast,finite_pairs,mean_difference_s,ci95_low_s,ci95_high_s,method
+medium,e2e_p50_s,B_minus_A,5,0.06719456212595105,-0.3782721602666221,0.5126612845185242,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+medium,e2e_p50_s,C_minus_B,5,-0.18553977315314113,-0.48557094246406834,0.11449139615778609,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+medium,e2e_p99_s,B_minus_A,5,-0.871557089779526,-4.4196368713573975,2.676522691798345,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+medium,e2e_p99_s,C_minus_B,5,0.5893036063294858,-3.423084145281616,4.601691357940587,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+medium,ttft_p50_s,B_minus_A,5,0.0017378248274326324,-0.00047508293904384804,0.003950732593909113,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+medium,ttft_p50_s,C_minus_B,5,-0.0014809095300734043,-0.00320707618122073,0.0002452571210739211,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+medium,ttft_p95_s,B_minus_A,5,-0.002870962768793106,-0.004389625839966021,-0.0013522996976201914,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+medium,ttft_p95_s,C_minus_B,5,-0.001814767811447382,-0.012054288464290125,0.008424752841395362,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+high,e2e_p50_s,B_minus_A,5,-0.06554467841051519,-0.23530657467536997,0.10421721785433959,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+high,e2e_p50_s,C_minus_B,5,0.009359152195975185,-0.1537653561923791,0.17248366058432948,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+high,e2e_p99_s,B_minus_A,5,-0.5532339483965188,-0.9920053911141736,-0.11446250567886407,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+high,e2e_p99_s,C_minus_B,5,0.06964450040832162,-1.5550539051275996,1.694342905944243,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+high,ttft_p50_s,B_minus_A,5,-0.00017746598459780216,-0.001927204291831239,0.0015722723226356348,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+high,ttft_p50_s,C_minus_B,5,-0.00041898800991475583,-0.0014823885481574646,0.000644412528327953,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+high,ttft_p95_s,B_minus_A,5,6.156903691589832e-05,-0.008155024384696407,0.008278162458528204,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim
+high,ttft_p95_s,C_minus_B,5,-0.001738905580714345,-0.008034776375777373,0.0045569652143486825,secondary descriptive paired-seed t interval df4; no multiple-outcome significance claim

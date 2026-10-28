@@ -1,0 +1,13 @@
+﻿comparison,available_modes,all_ABC_present,available_traces_identical
+formal_high_s8101,ABC,True,True
+formal_high_s8102,ABC,True,True
+formal_high_s8103,ABC,True,True
+formal_high_s8104,ABC,True,True
+formal_high_s8105,ABC,True,True
+formal_medium_s8101,ABC,True,True
+formal_medium_s8102,ABC,True,True
+formal_medium_s8103,ABC,True,True
+formal_medium_s8104,ABC,True,True
+formal_medium_s8105,ABC,True,True
+pre_high,ABC,True,True
+pre_medium,ABC,True,True

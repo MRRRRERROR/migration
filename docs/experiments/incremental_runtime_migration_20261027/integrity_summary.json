@@ -1,0 +1,9 @@
+{
+  "closed_rounds": 36,
+  "observable_identity_issues": 0,
+  "permission_violations": 0,
+  "trace_mismatches": 0,
+  "comparable_outputs": 18404,
+  "output_mismatches": 0,
+  "note": "Observable records only; atomic race safety also depends on EngineCore correctness gates and raw transaction evidence"
+}

@@ -1,0 +1,25 @@
+{
+  "updated_beijing": "2026-10-28T03:34:04.122543+08:00",
+  "experiment": "incremental_runtime_migration",
+  "formal_rounds_complete": 30,
+  "formal_rounds_planned": 30,
+  "formal_requests": 22953,
+  "completed": 22953,
+  "failed": 0,
+  "unfinished": 0,
+  "cpu_analysis_complete": true,
+  "raw_archive_sha256": "04e3fabb91f9e9e14c03481e0e74e5555508b7ad609faef907d201137a56608d",
+  "gpu_released": true,
+  "auxiliary_released": true,
+  "normal_native_unload_qualified": false,
+  "native_shutdown_faults": [
+    "D_Asio_doAccept_segfault",
+    "S_corrupted_double_linked_list"
+  ],
+  "native_root_cause_proven": false,
+  "remaining_gpu_rounds": 0,
+  "restart_experiment": false,
+  "report": "delivery_01/paired_abc_01/report.html",
+  "original_progress_preserved": "blocked in post-measurement cleanup.gpu_check",
+  "open_issue": "Native teardown root cause requires separate evidence and qualification; no automatic GPU repro in this experiment"
+}

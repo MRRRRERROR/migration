@@ -1,0 +1,9 @@
+﻿load,group,seeds_with_group,mean_of_seed_group_e2e_differences_s,group_request_round_pairs,output_mismatches,interpretation
+medium,C实际完成运行迁移的请求,4,0.5626290031747582,12,0,descriptive posthoc C-selected groups; groups may overlap; no independent causal estimate
+medium,C尝试时源端其他请求,4,0.044959266780919584,85,0,descriptive posthoc C-selected groups; groups may overlap; no independent causal estimate
+medium,C尝试时目标端已有请求,4,0.06032430022406695,55,0,descriptive posthoc C-selected groups; groups may overlap; no independent causal estimate
+medium,C选择的运行候选（含取消）,4,0.4864361524329676,13,0,descriptive posthoc C-selected groups; groups may overlap; no independent causal estimate
+high,C实际完成运行迁移的请求,5,-0.09535323791089469,25,0,descriptive posthoc C-selected groups; groups may overlap; no independent causal estimate
+high,C尝试时源端其他请求,5,0.09406214470163443,483,0,descriptive posthoc C-selected groups; groups may overlap; no independent causal estimate
+high,C尝试时目标端已有请求,5,0.2562447159653533,433,0,descriptive posthoc C-selected groups; groups may overlap; no independent causal estimate
+high,C选择的运行候选（含取消）,5,-0.09803128284130556,26,0,descriptive posthoc C-selected groups; groups may overlap; no independent causal estimate

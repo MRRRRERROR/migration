@@ -1,0 +1,138 @@
+{
+  "wall_ns": 1793129265517070263,
+  "monotonic_s": 1526545.30105797,
+  "root": "/data/home/zylu/llumnix-v018-main/results/incremental_runtime_migration_20261027_01",
+  "verified_identities": [],
+  "processes": [
+    {
+      "label": "redis",
+      "pid": 336906,
+      "created": 1793092848.62,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "label": "vllm_S",
+      "pid": 336913,
+      "created": 1793092849.13,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "label": "vllm_D",
+      "pid": 336914,
+      "created": 1793092849.13,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "label": "nvml",
+      "pid": 345955,
+      "created": 1793093436.84,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 470406,
+      "created": 1793101722.26,
+      "label": "controller",
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 337349,
+      "created": 1793092861.97,
+      "label": "model_child",
+      "verified_parent": 336913,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 337350,
+      "created": 1793092861.98,
+      "label": "model_child",
+      "verified_parent": 336913,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 338637,
+      "created": 1793092908.98,
+      "label": "model_child",
+      "verified_parent": 336913,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 337217,
+      "created": 1793092860.51,
+      "label": "model_child",
+      "verified_parent": 336914,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 337218,
+      "created": 1793092860.51,
+      "label": "model_child",
+      "verified_parent": 336914,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 338636,
+      "created": 1793092908.98,
+      "label": "model_child",
+      "verified_parent": 336914,
+      "exists": false,
+      "identity_matches": false
+    },
+    {
+      "pid": 349780,
+      "created": 1793093674.04,
+      "label": "prometheus",
+      "exists": false,
+      "identity_matches": false
+    }
+  ],
+  "owned_residual_pids": [],
+  "model_residual_pids": [],
+  "compute_query_returncode": 0,
+  "compute_query_stderr": "",
+  "selected_gpu_compute_apps": [],
+  "verified_owned_gpu_apps": [],
+  "gpu_released": true,
+  "auxiliary_released": true,
+  "selected_devices": [
+    "0, GPU-0fc3a8e6-93f3-9c89-f694-bf490b219907, 2, 0, 8.62",
+    "1, GPU-9ce9c226-678f-8cb4-4cf6-47c18d5b638a, 2, 0, 6.35"
+  ],
+  "listening_experiment_ports": [],
+  "last_engine_states": {
+    "S": {
+      "pid": 337350,
+      "wall_ns": 1793127091967836374,
+      "monotonic_s": 1524371.751818192,
+      "mode": "C",
+      "running": 0,
+      "waiting": 0,
+      "holds": [],
+      "migration_tasks": 0,
+      "migration_finish": true,
+      "request_ids": []
+    },
+    "D": {
+      "pid": 337218,
+      "wall_ns": 1793127085833585105,
+      "monotonic_s": 1524365.617568363,
+      "mode": "C",
+      "running": 0,
+      "waiting": 0,
+      "holds": [],
+      "migration_tasks": 0,
+      "migration_finish": true,
+      "request_ids": []
+    }
+  },
+  "note": "No signals sent. New unrelated processes on released devices/ports are not owned and must not be stopped."
+}
